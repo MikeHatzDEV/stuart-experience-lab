@@ -1565,7 +1565,7 @@ function AssetExplorer() {
   )
 }
 
-function AuditPage() {
+function AuditPage({ currentEnvironment }: { currentEnvironment: Environment }) {
   const events = [
     {
       time: '2026-06-08 06:42:11',
@@ -1602,9 +1602,22 @@ function AuditPage() {
   return (
     <>
       <div className="page-intro">
-        <h2>Audit history</h2>
+        <h2>Audit History</h2>
         <p>{PAGE_META.audit.description}</p>
       </div>
+
+      {/* Single-Core Mode: events are scoped to currentEnvironment (no Environment column). */}
+      {/* Multi-Core Mode (future): when viewing "All Stuart Cores", add an Environment column below. */}
+      <div className="panel audit-environment-context" aria-label="Audit environment context">
+        <div className="audit-environment-context-label">Viewing Environment</div>
+        <div className="audit-environment-context-name">{currentEnvironment.name}</div>
+        <div className="audit-environment-context-core">
+          {currentEnvironment.coreLabel} · {currentEnvironment.coreVersion}
+        </div>
+      </div>
+
+      {/* Future: audit-summary-metrics — Events Today, Critical Events, Operator Actions, System Actions */}
+
       <div className="filter-bar">
         <input className="filter-input" type="text" placeholder="Search events…" />
         <input className="filter-input" type="text" placeholder="Actor" />
@@ -1626,6 +1639,7 @@ function AuditPage() {
               <th>Actor</th>
               <th>Action</th>
               <th>Detail</th>
+              {/* Multi-Core Mode (future): <th>Environment</th> when auditing all Stuart Cores */}
             </tr>
           </thead>
           <tbody>
@@ -2849,7 +2863,13 @@ function ProvidersSettings() {
   )
 }
 
-function PageContent({ page }: { page: PageId }) {
+function PageContent({
+  page,
+  currentEnvironment,
+}: {
+  page: PageId
+  currentEnvironment: Environment
+}) {
   switch (page) {
     case 'operations':
       return <OperationsConsole />
@@ -2860,7 +2880,7 @@ function PageContent({ page }: { page: PageId }) {
     case 'assets':
       return <AssetExplorer />
     case 'audit':
-      return <AuditPage />
+      return <AuditPage currentEnvironment={currentEnvironment} />
     case 'settings':
       return <SettingsPage />
     default:
@@ -2918,7 +2938,7 @@ function App() {
         </header>
 
         <main className="page-body">
-          <PageContent page={activePage} />
+          <PageContent page={activePage} currentEnvironment={currentEnvironment} />
         </main>
       </div>
     </div>
