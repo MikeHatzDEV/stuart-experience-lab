@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { EnvironmentSelector, type Environment } from './EnvironmentSelector'
+import {
+  DEFAULT_CORE_LABEL,
+  EXPERIENCE_LAB_VERSION_LABEL,
+  MOCK_CORE_VERSION_PLACEHOLDER,
+} from './app/version'
 import './App.css'
 
 type PageId = 'operations' | 'network' | 'services' | 'assets' | 'audit' | 'settings'
@@ -41,11 +46,36 @@ const PAGE_META: Record<PageId, { title: string; description: string }> = {
 }
 
 const MOCK_ENVIRONMENTS: Environment[] = [
-  { id: 'signal-lab', name: 'Signal Lab' },
-  { id: 'oppure', name: 'Oppure' },
-  { id: 'maine', name: 'Maine' },
-  { id: 'john', name: 'John' },
-  { id: 'abc-manufacturing', name: 'ABC Manufacturing' },
+  {
+    id: 'signal-lab',
+    name: 'Signal Lab',
+    coreLabel: DEFAULT_CORE_LABEL,
+    coreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+  },
+  {
+    id: 'oppure',
+    name: 'Oppure',
+    coreLabel: DEFAULT_CORE_LABEL,
+    coreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+  },
+  {
+    id: 'maine',
+    name: 'Maine',
+    coreLabel: DEFAULT_CORE_LABEL,
+    coreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+  },
+  {
+    id: 'john',
+    name: 'John',
+    coreLabel: DEFAULT_CORE_LABEL,
+    coreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+  },
+  {
+    id: 'abc-manufacturing',
+    name: 'ABC Manufacturing',
+    coreLabel: DEFAULT_CORE_LABEL,
+    coreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+  },
 ]
 
 const SETTINGS_CATEGORIES = [
@@ -2848,7 +2878,7 @@ function App() {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-brand-name">STUART</div>
-          <div className="sidebar-brand-tag">Operations Assistant · 0.0.2-Alpha_v2</div>
+          <div className="sidebar-brand-tag">{EXPERIENCE_LAB_VERSION_LABEL}</div>
         </div>
         <nav className="sidebar-nav" aria-label="Main navigation">
           {NAV_ITEMS.map((item) => (

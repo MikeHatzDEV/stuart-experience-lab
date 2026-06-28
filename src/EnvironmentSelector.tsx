@@ -4,9 +4,9 @@ import './EnvironmentSelector.css'
 export type Environment = {
   id: string
   name: string
+  coreLabel: string
+  coreVersion: string
 }
-
-const STUART_CORE_LABEL = 'Stuart Core'
 
 type EnvironmentSelectorProps = {
   currentEnvironment: Environment
@@ -14,20 +14,24 @@ type EnvironmentSelectorProps = {
   onEnvironmentChange: (environment: Environment) => void
 }
 
+function formatCoreLine(environment: Pick<Environment, 'coreLabel' | 'coreVersion'>): string {
+  return `${environment.coreLabel} · ${environment.coreVersion}`
+}
+
 function EnvironmentIdentity({
-  name,
+  environment,
   showCaret = false,
   variant = 'trigger',
 }: {
-  name: string
+  environment: Pick<Environment, 'name' | 'coreLabel' | 'coreVersion'>
   showCaret?: boolean
   variant?: 'trigger' | 'option'
 }) {
   return (
     <span className={`environment-identity environment-identity-${variant}`}>
-      <span className="environment-identity-name">{name}</span>
+      <span className="environment-identity-name">{environment.name}</span>
       <span className="environment-identity-core">
-        {STUART_CORE_LABEL}
+        <span className="environment-identity-core-line">{formatCoreLine(environment)}</span>
         {showCaret ? (
           <span className="environment-selector-caret" aria-hidden="true">
             ▼
@@ -46,6 +50,7 @@ export function EnvironmentSelector({
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const listId = useId()
+  const currentCoreLine = formatCoreLine(currentEnvironment)
 
   useEffect(() => {
     if (!open) return
@@ -86,10 +91,10 @@ export function EnvironmentSelector({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
-        aria-label={`${currentEnvironment.name} ${STUART_CORE_LABEL}`}
+        aria-label={`${currentEnvironment.name} ${currentCoreLine}`}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <EnvironmentIdentity name={currentEnvironment.name} showCaret variant="trigger" />
+        <EnvironmentIdentity environment={currentEnvironment} showCaret variant="trigger" />
       </button>
 
       {open ? (
@@ -101,7 +106,7 @@ export function EnvironmentSelector({
                 type="button"
                 role="option"
                 aria-selected={environment.id === currentEnvironment.id}
-                aria-label={`${environment.name} ${STUART_CORE_LABEL}`}
+                aria-label={`${environment.name} ${formatCoreLine(environment)}`}
                 className={`environment-selector-option${
                   environment.id === currentEnvironment.id ? ' is-selected' : ''
                 }`}
@@ -114,7 +119,7 @@ export function EnvironmentSelector({
                 ) : (
                   <span className="environment-selector-check-placeholder" aria-hidden="true" />
                 )}
-                <EnvironmentIdentity name={environment.name} variant="option" />
+                <EnvironmentIdentity environment={environment} variant="option" />
               </button>
             </div>
           ))}

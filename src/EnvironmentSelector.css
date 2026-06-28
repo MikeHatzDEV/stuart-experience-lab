@@ -53,6 +53,11 @@
   font-size: 11px;
   line-height: 1.2;
   color: var(--text-muted);
+  min-width: 0;
+}
+
+.environment-identity-core-line {
+  white-space: nowrap;
 }
 
 .environment-selector-caret {
