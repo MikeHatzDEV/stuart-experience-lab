@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { EnvironmentSelector, type Environment } from './EnvironmentSelector'
 import './App.css'
 
 type PageId = 'operations' | 'network' | 'services' | 'assets' | 'audit' | 'settings'
@@ -38,6 +39,14 @@ const PAGE_META: Record<PageId, { title: string; description: string }> = {
     description: 'Configure how Stuart communicates, connects, learns, and protects the environment.',
   },
 }
+
+const MOCK_ENVIRONMENTS: Environment[] = [
+  { id: 'signal-lab', name: 'Signal Lab' },
+  { id: 'oppure', name: 'Oppure' },
+  { id: 'maine', name: 'Maine' },
+  { id: 'john', name: 'John' },
+  { id: 'abc-manufacturing', name: 'ABC Manufacturing' },
+]
 
 const SETTINGS_CATEGORIES = [
   {
@@ -2831,6 +2840,7 @@ function PageContent({ page }: { page: PageId }) {
 
 function App() {
   const [activePage, setActivePage] = useState<PageId>('operations')
+  const [currentEnvironment, setCurrentEnvironment] = useState<Environment>(MOCK_ENVIRONMENTS[0])
   const meta = PAGE_META[activePage]
 
   return (
@@ -2859,7 +2869,11 @@ function App() {
         <header className="top-header">
           <div className="header-left">
             <div>
-              <div className="header-breadcrumb">Signal Lab / Stuart</div>
+              <EnvironmentSelector
+                currentEnvironment={currentEnvironment}
+                availableEnvironments={MOCK_ENVIRONMENTS}
+                onEnvironmentChange={setCurrentEnvironment}
+              />
               <div className="header-title">{meta.title}</div>
             </div>
           </div>

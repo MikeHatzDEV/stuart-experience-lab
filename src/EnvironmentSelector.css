@@ -1,0 +1,132 @@
+.environment-selector {
+  position: relative;
+  display: inline-flex;
+}
+
+.environment-selector-trigger {
+  display: inline-flex;
+  align-items: flex-start;
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  margin: -2px -8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.environment-selector-trigger:hover {
+  background: var(--bg-panel-hover);
+}
+
+.environment-selector.is-open .environment-selector-trigger {
+  background: var(--bg-panel);
+  border-color: var(--border);
+}
+
+.environment-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.environment-identity-name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-heading);
+}
+
+.environment-selector-trigger:hover .environment-identity-name,
+.environment-selector.is-open .environment-identity-name {
+  color: var(--text-heading);
+}
+
+.environment-identity-core {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: var(--text-muted);
+}
+
+.environment-selector-caret {
+  font-size: 8px;
+  opacity: 0.55;
+  transform: translateY(1px);
+  transition: opacity 0.15s;
+}
+
+.environment-selector.is-open .environment-selector-caret {
+  opacity: 0.85;
+}
+
+.environment-selector-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 220px;
+  padding: 4px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.environment-selector-divider {
+  height: 1px;
+  margin: 4px 8px;
+  background: var(--border-subtle);
+}
+
+.environment-selector-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  appearance: none;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.environment-selector-option:hover {
+  background: var(--bg-panel-hover);
+}
+
+.environment-selector-option.is-selected .environment-identity-name {
+  color: var(--text-heading);
+}
+
+.environment-identity-option .environment-identity-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.environment-identity-option .environment-identity-core {
+  font-size: 10px;
+}
+
+.environment-selector-check,
+.environment-selector-check-placeholder {
+  width: 12px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--status-ok);
+}
+
+.environment-selector-check-placeholder {
+  visibility: hidden;
+}
