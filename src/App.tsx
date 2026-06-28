@@ -1566,38 +1566,131 @@ function AssetExplorer() {
 }
 
 function AuditPage({ currentEnvironment }: { currentEnvironment: Environment }) {
-  const events = [
+  type AuditSeverity = 'information' | 'warning' | 'critical'
+  type AuditCategory = 'SYSTEM' | 'NETWORK' | 'BACKUP' | 'SECURITY' | 'OPERATOR'
+
+  type AuditEvent = {
+    id: string
+    time: string
+    severity: AuditSeverity
+    category: AuditCategory
+    actor: string
+    action: string
+    detail: string
+    observation: string
+    reason: string
+    confidence: string
+    recommendedAction: string
+    relatedEvents: string[]
+    evidence: string[]
+  }
+
+  const events: AuditEvent[] = [
     {
+      id: 'audit-001',
       time: '2026-06-08 06:42:11',
+      severity: 'warning',
+      category: 'NETWORK',
       actor: 'Stuart',
       action: 'Device state change',
       detail: 'AP-Lounge marked offline after UniFi observation',
+      observation: 'UniFi reported AP-Lounge unavailable.',
+      reason: 'Ping verification also failed.',
+      confidence: '98%',
+      recommendedAction: 'Verify AP power before replacing hardware.',
+      relatedEvents: ['WAN anomaly at 02:15', 'UniFi poll at 06:41'],
+      evidence: ['UniFi controller event log', 'ICMP probe failure', 'Last seen 06:40:52'],
     },
     {
+      id: 'audit-002',
       time: '2026-06-08 05:10:44',
+      severity: 'information',
+      category: 'BACKUP',
       actor: 'Stuart',
       action: 'Backup observed',
       detail: 'Veeam job completed on TrueNAS-Core',
+      observation: 'Veeam reported job completion for nightly backup.',
+      reason: 'Job duration and restore point matched expected schedule.',
+      confidence: '99%',
+      recommendedAction: 'No action required. Continue monitoring tonight’s job.',
+      relatedEvents: ['Backblaze sync at 04:55'],
+      evidence: ['Veeam job summary', 'TrueNAS snapshot record'],
     },
     {
+      id: 'audit-003',
       time: '2026-06-08 04:18:02',
+      severity: 'information',
+      category: 'OPERATOR',
       actor: 'hatzopoulos',
       action: 'Settings viewed',
       detail: 'Providers section opened',
+      observation: 'Operator opened Providers settings in the Experience Lab shell.',
+      reason: 'Routine configuration review; no provider state changed.',
+      confidence: '100%',
+      recommendedAction: 'No action required.',
+      relatedEvents: [],
+      evidence: ['Session audit entry', 'UI navigation trace'],
     },
     {
+      id: 'audit-004',
       time: '2026-06-08 02:15:33',
+      severity: 'information',
+      category: 'NETWORK',
       actor: 'Stuart',
       action: 'WAN anomaly',
       detail: 'Comcast latency exceeded threshold for 4 minutes',
+      observation: 'WAN latency rose above the configured threshold.',
+      reason: 'Upstream ISP path showed elevated round-trip time without packet loss.',
+      confidence: '92%',
+      recommendedAction: 'Monitor for recurrence before escalating to ISP.',
+      relatedEvents: ['Gateway health check at 02:11'],
+      evidence: ['UniFi gateway metrics', 'Latency sample window 02:11–02:15'],
     },
     {
+      id: 'audit-005',
       time: '2026-06-07 23:01:19',
+      severity: 'information',
+      category: 'SECURITY',
       actor: 'hatzopoulos',
       action: 'Stewardship review',
       detail: 'Printer-HR reachability flagged for follow-up',
+      observation: 'Printer-HR did not respond during scheduled reachability check.',
+      reason: 'Device may be offline or on a VLAN without management access.',
+      confidence: '85%',
+      recommendedAction: 'Confirm printer power and network segment during next site visit.',
+      relatedEvents: ['Asset inventory refresh at 22:45'],
+      evidence: ['Reachability probe log', 'Asset record Printer-HR'],
     },
   ]
+
+  const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null)
+
+  const environmentLine = `${currentEnvironment.name} • ${currentEnvironment.coreLabel} • ${currentEnvironment.coreVersion}`
+
+  useEffect(() => {
+    if (!selectedEvent) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedEvent(null)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [selectedEvent])
+
+  const severityLabel: Record<AuditSeverity, string> = {
+    information: 'Information',
+    warning: 'Warning',
+    critical: 'Critical',
+  }
+
+  const severityTone: Record<AuditSeverity, 'info' | 'warn' | 'error'> = {
+    information: 'info',
+    warning: 'warn',
+    critical: 'error',
+  }
 
   return (
     <>
@@ -1606,46 +1699,101 @@ function AuditPage({ currentEnvironment }: { currentEnvironment: Environment }) 
         <p>{PAGE_META.audit.description}</p>
       </div>
 
-      {/* Single-Core Mode: events are scoped to currentEnvironment (no Environment column). */}
-      {/* Multi-Core Mode (future): when viewing "All Stuart Cores", add an Environment column below. */}
-      <div className="panel audit-environment-context" aria-label="Audit environment context">
+      {/* Single-Core Mode: events scoped to currentEnvironment — no Environment column. */}
+      {/* Master Stuart Mode (future): Environment column appears when viewing all Stuart Cores. */}
+      <div className="panel audit-environment-context audit-environment-context-compact" aria-label="Audit environment context">
         <div className="audit-environment-context-label">Viewing Environment</div>
-        <div className="audit-environment-context-name">{currentEnvironment.name}</div>
-        <div className="audit-environment-context-core">
-          {currentEnvironment.coreLabel} · {currentEnvironment.coreVersion}
+        <div className="audit-environment-context-line">{environmentLine}</div>
+      </div>
+
+      <div className="audit-summary-grid" aria-label="Audit summary">
+        <div className="audit-summary-card">
+          <div className="audit-summary-label">Events Today</div>
+          <div className="audit-summary-value">5</div>
+        </div>
+        <div className="audit-summary-card">
+          <div className="audit-summary-label">Critical</div>
+          <div className="audit-summary-value tone-critical">0</div>
+        </div>
+        <div className="audit-summary-card">
+          <div className="audit-summary-label">Warnings</div>
+          <div className="audit-summary-value tone-warning">1</div>
+        </div>
+        <div className="audit-summary-card">
+          <div className="audit-summary-label">Informational</div>
+          <div className="audit-summary-value tone-information">4</div>
         </div>
       </div>
 
-      {/* Future: audit-summary-metrics — Events Today, Critical Events, Operator Actions, System Actions */}
-
-      <div className="filter-bar">
+      <div className="filter-bar audit-filter-bar">
         <input className="filter-input" type="text" placeholder="Search events…" />
         <input className="filter-input" type="text" placeholder="Actor" />
         <input className="filter-input" type="text" placeholder="From date" />
         <input className="filter-input" type="text" placeholder="To date" />
+        <select className="filter-input filter-select" defaultValue="" aria-label="Category filter">
+          <option value="">Category</option>
+          <option value="all">All categories</option>
+          <option value="system">SYSTEM</option>
+          <option value="network">NETWORK</option>
+          <option value="backup">BACKUP</option>
+          <option value="security">SECURITY</option>
+          <option value="operator">OPERATOR</option>
+        </select>
+        <select className="filter-input filter-select" defaultValue="" aria-label="Severity filter">
+          <option value="">Severity</option>
+          <option value="all">All severities</option>
+          <option value="information">Information</option>
+          <option value="warning">Warning</option>
+          <option value="critical">Critical</option>
+        </select>
       </div>
+
       <div className="panel">
         <div className="panel-header">
           <div>
             <div className="panel-title">Event log</div>
-            <div className="panel-subtitle">Most recent first</div>
+            <div className="panel-subtitle">Most recent first · select a row to investigate</div>
           </div>
           <StatusBadge label={`${events.length} events`} tone="info" />
         </div>
-        <table className="data-table">
+        <table className="data-table audit-event-table">
           <thead>
             <tr>
               <th>Time</th>
+              <th>Severity</th>
+              <th>Category</th>
               <th>Actor</th>
               <th>Action</th>
               <th>Detail</th>
-              {/* Multi-Core Mode (future): <th>Environment</th> when auditing all Stuart Cores */}
+              {/* Master Stuart Mode (future): <th>Environment</th> */}
             </tr>
           </thead>
           <tbody>
             {events.map((event) => (
-              <tr key={event.time + event.action}>
+              <tr
+                key={event.id}
+                className={`audit-event-row${selectedEvent?.id === event.id ? ' is-selected' : ''}`}
+                onClick={() => setSelectedEvent(event)}
+                tabIndex={0}
+                role="button"
+                aria-label={`Open details for ${event.action}`}
+                onKeyDown={(keyboardEvent) => {
+                  if (keyboardEvent.key === 'Enter' || keyboardEvent.key === ' ') {
+                    keyboardEvent.preventDefault()
+                    setSelectedEvent(event)
+                  }
+                }}
+              >
                 <td>{event.time}</td>
+                <td>
+                  <StatusBadge
+                    label={severityLabel[event.severity]}
+                    tone={severityTone[event.severity]}
+                  />
+                </td>
+                <td>
+                  <span className="audit-category">{event.category}</span>
+                </td>
                 <td>{event.actor}</td>
                 <td>{event.action}</td>
                 <td>{event.detail}</td>
@@ -1654,6 +1802,110 @@ function AuditPage({ currentEnvironment }: { currentEnvironment: Environment }) 
           </tbody>
         </table>
       </div>
+
+      {selectedEvent ? (
+        <>
+          <button
+            type="button"
+            className="audit-drawer-overlay"
+            aria-label="Close event details"
+            onClick={() => setSelectedEvent(null)}
+          />
+          <aside className="audit-drawer" aria-label="Event details">
+            <div className="audit-drawer-header">
+              <div>
+                <div className="audit-drawer-eyebrow">Event Details</div>
+                <div className="audit-drawer-title">{selectedEvent.action}</div>
+              </div>
+              <button
+                type="button"
+                className="audit-drawer-close"
+                aria-label="Close"
+                onClick={() => setSelectedEvent(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="audit-drawer-body">
+              <section className="audit-drawer-section">
+                <h3 className="audit-drawer-section-title">Summary</h3>
+                <dl className="audit-drawer-facts">
+                  <div className="audit-drawer-fact">
+                    <dt>Timestamp</dt>
+                    <dd>{selectedEvent.time}</dd>
+                  </div>
+                  <div className="audit-drawer-fact">
+                    <dt>Severity</dt>
+                    <dd>
+                      <StatusBadge
+                        label={severityLabel[selectedEvent.severity]}
+                        tone={severityTone[selectedEvent.severity]}
+                      />
+                    </dd>
+                  </div>
+                  <div className="audit-drawer-fact">
+                    <dt>Category</dt>
+                    <dd>
+                      <span className="audit-category">{selectedEvent.category}</span>
+                    </dd>
+                  </div>
+                  <div className="audit-drawer-fact">
+                    <dt>Actor</dt>
+                    <dd>{selectedEvent.actor}</dd>
+                  </div>
+                  <div className="audit-drawer-fact">
+                    <dt>Action</dt>
+                    <dd>{selectedEvent.action}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              <section className="audit-drawer-section">
+                <h3 className="audit-drawer-section-title">Stuart Reasoning</h3>
+                <div className="audit-reasoning-block">
+                  <div className="audit-reasoning-label">Observation</div>
+                  <p>{selectedEvent.observation}</p>
+                </div>
+                <div className="audit-reasoning-block">
+                  <div className="audit-reasoning-label">Reason</div>
+                  <p>{selectedEvent.reason}</p>
+                </div>
+                <div className="audit-reasoning-block">
+                  <div className="audit-reasoning-label">Confidence</div>
+                  <p className="audit-confidence">{selectedEvent.confidence}</p>
+                </div>
+                <div className="audit-reasoning-block">
+                  <div className="audit-reasoning-label">Recommended Action</div>
+                  <p>{selectedEvent.recommendedAction}</p>
+                </div>
+              </section>
+
+              <section className="audit-drawer-section">
+                <h3 className="audit-drawer-section-title">Related Events</h3>
+                {selectedEvent.relatedEvents.length > 0 ? (
+                  <ul className="audit-drawer-list">
+                    {selectedEvent.relatedEvents.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="audit-drawer-empty">No related events recorded.</p>
+                )}
+              </section>
+
+              <section className="audit-drawer-section">
+                <h3 className="audit-drawer-section-title">Evidence</h3>
+                <ul className="audit-drawer-list">
+                  {selectedEvent.evidence.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </section>
+            </div>
+          </aside>
+        </>
+      ) : null}
     </>
   )
 }
