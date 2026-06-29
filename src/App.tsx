@@ -1804,31 +1804,10 @@ const ORGANIZATIONS: Organization[] = [
   },
 ]
 
-function organizationStatusTone(status: OrganizationStatus): 'ok' | 'warn' | 'info' {
-  if (status === 'Active') return 'ok'
-  if (status === 'Pilot') return 'info'
-  return 'warn'
-}
-
 function relationshipHealthTone(health: number): 'ok' | 'warn' | 'error' {
   if (health >= 95) return 'ok'
   if (health >= 80) return 'warn'
   return 'error'
-}
-
-function OrganizationDetailSection({
-  title,
-  children,
-}: {
-  title: string
-  children: ReactNode
-}) {
-  return (
-    <section className="org-detail-section">
-      <h3 className="org-detail-section-title">{title}</h3>
-      {children}
-    </section>
-  )
 }
 
 function OrganizationsPage() {
@@ -1837,189 +1816,173 @@ function OrganizationsPage() {
   const healthTone = relationshipHealthTone(selected.relationshipHealth)
 
   return (
-    <>
-      <div className="page-intro">
-        <h2>Organizations</h2>
-        <p>{PAGE_META.organizations.description}</p>
-      </div>
-
-      <div className="split-layout org-split-layout">
-        <div className="panel">
-          <div className="panel-header">
-            <div>
-              <div className="panel-title">Organization list</div>
-              <div className="panel-subtitle">Labs, businesses, pilots, and customers</div>
-            </div>
-            <StatusBadge label={`${ORGANIZATIONS.length} organizations`} tone="info" />
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Organization</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Primary Contact</th>
-                <th>Stuart Core</th>
-                <th>Renewal</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ORGANIZATIONS.map((org) => (
-                <tr
-                  key={org.id}
-                  className={`org-row${org.id === selectedId ? ' selected' : ''}`}
-                  onClick={() => setSelectedId(org.id)}
-                >
-                  <td>{org.name}</td>
-                  <td>{org.type}</td>
-                  <td>
-                    <StatusBadge label={org.status} tone={organizationStatusTone(org.status)} />
-                  </td>
-                  <td>{org.primaryContact}</td>
-                  <td>{org.stuartCore}</td>
-                  <td>{org.renewal}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="settings-shell organizations-shell">
+      <aside className="settings-nav" aria-label="Organizations">
+        <div className="settings-nav-header">
+          <h2>Organizations</h2>
+          <p>{PAGE_META.organizations.description}</p>
         </div>
+        <nav className="settings-nav-list">
+          {ORGANIZATIONS.map((org) => (
+            <button
+              key={org.id}
+              type="button"
+              className={`settings-nav-item org-nav-item${org.id === selectedId ? ' active' : ''}`}
+              onClick={() => setSelectedId(org.id)}
+            >
+              <span className="org-nav-item-name">{org.name}</span>
+              <span className="org-nav-item-meta">
+                {org.type} · {org.status}
+              </span>
+            </button>
+          ))}
+        </nav>
+      </aside>
 
-        <div className="panel org-detail-panel">
-          <div className="panel-header">
+      <div className="settings-content">
+        <div className="settings-page-content">
+          <div className="settings-content-header org-content-header">
             <div>
-              <div className="panel-title">{selected.name}</div>
-              <div className="panel-subtitle">
+              <h2>{selected.name}</h2>
+              <p>
                 {selected.type} · {selected.status}
-              </div>
+              </p>
             </div>
-            <StatusBadge label={selected.status} tone={organizationStatusTone(selected.status)} />
+            <div className="org-relationship-health-stat" aria-label="Relationship Health">
+              <span className="org-health-stat-label">Relationship Health</span>
+              <span className={`org-health-stat-value tone-${healthTone}`}>
+                {selected.relationshipHealth}%
+              </span>
+            </div>
           </div>
 
-          <OrganizationDetailSection title="Overview">
-            <div className="detail-grid">
-              <div className="detail-row">
-                <div className="detail-label">Organization</div>
-                <div className="detail-value">{selected.name}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Type</div>
-                <div className="detail-value">{selected.type}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Status</div>
-                <div className="detail-value">{selected.status}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Relationship Health</div>
-                <div className={`detail-value org-health-value tone-${healthTone}`}>
-                  {selected.relationshipHealth}%
+          <div className="settings-sections">
+            <SettingsSectionCard title="Overview" className="span-full">
+              <div className="detail-grid">
+                <div className="detail-row">
+                  <div className="detail-label">Organization</div>
+                  <div className="detail-value">{selected.name}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Type</div>
+                  <div className="detail-value">{selected.type}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Status</div>
+                  <div className="detail-value">{selected.status}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Relationship Health</div>
+                  <div className={`detail-value org-health-value tone-${healthTone}`}>
+                    {selected.relationshipHealth}%
+                  </div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Current Stuart Core</div>
+                  <div className="detail-value">{selected.stuartCore}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Last Check-In</div>
+                  <div className="detail-value">{selected.lastCheckIn}</div>
                 </div>
               </div>
-              <div className="detail-row">
-                <div className="detail-label">Current Stuart Core</div>
-                <div className="detail-value">{selected.stuartCore}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Last Check-In</div>
-                <div className="detail-value">{selected.lastCheckIn}</div>
-              </div>
-            </div>
-          </OrganizationDetailSection>
+            </SettingsSectionCard>
 
-          <OrganizationDetailSection title="Contacts">
-            <div className="detail-grid">
-              <div className="detail-row">
-                <div className="detail-label">Primary Contact</div>
-                <div className="detail-value">{selected.contacts.primary}</div>
+            <SettingsSectionCard title="Contacts">
+              <div className="detail-grid">
+                <div className="detail-row">
+                  <div className="detail-label">Primary Contact</div>
+                  <div className="detail-value">{selected.contacts.primary}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Technical Contact</div>
+                  <div className="detail-value">{selected.contacts.technical}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Billing Contact</div>
+                  <div className="detail-value">{selected.contacts.billing}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Emergency Contact</div>
+                  <div className="detail-value">{selected.contacts.emergency}</div>
+                </div>
               </div>
-              <div className="detail-row">
-                <div className="detail-label">Technical Contact</div>
-                <div className="detail-value">{selected.contacts.technical}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Billing Contact</div>
-                <div className="detail-value">{selected.contacts.billing}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Emergency Contact</div>
-                <div className="detail-value">{selected.contacts.emergency}</div>
-              </div>
-            </div>
-          </OrganizationDetailSection>
+            </SettingsSectionCard>
 
-          <OrganizationDetailSection title="Subscription">
-            <div className="detail-grid">
-              <div className="detail-row">
-                <div className="detail-label">Plan</div>
-                <div className="detail-value">{selected.subscription.plan}</div>
+            <SettingsSectionCard title="Subscription">
+              <div className="detail-grid">
+                <div className="detail-row">
+                  <div className="detail-label">Plan</div>
+                  <div className="detail-value">{selected.subscription.plan}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Billing Status</div>
+                  <div className="detail-value">{selected.subscription.billingStatus}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Anniversary Date</div>
+                  <div className="detail-value">{selected.subscription.anniversaryDate}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Renewal Date</div>
+                  <div className="detail-value">{selected.subscription.renewalDate}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Monthly Fee</div>
+                  <div className="detail-value">{selected.subscription.monthlyFee}</div>
+                </div>
               </div>
-              <div className="detail-row">
-                <div className="detail-label">Billing Status</div>
-                <div className="detail-value">{selected.subscription.billingStatus}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Anniversary Date</div>
-                <div className="detail-value">{selected.subscription.anniversaryDate}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Renewal Date</div>
-                <div className="detail-value">{selected.subscription.renewalDate}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Monthly Fee</div>
-                <div className="detail-value">{selected.subscription.monthlyFee}</div>
-              </div>
-            </div>
-          </OrganizationDetailSection>
+            </SettingsSectionCard>
 
-          <OrganizationDetailSection title="Infrastructure">
-            <div className="detail-grid">
-              <div className="detail-row">
-                <div className="detail-label">Stuart Core Version</div>
-                <div className="detail-value">{selected.infrastructure.stuartCoreVersion}</div>
+            <SettingsSectionCard title="Infrastructure">
+              <div className="detail-grid">
+                <div className="detail-row">
+                  <div className="detail-label">Stuart Core Version</div>
+                  <div className="detail-value">{selected.infrastructure.stuartCoreVersion}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Assets</div>
+                  <div className="detail-value">{selected.infrastructure.assets}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Networks</div>
+                  <div className="detail-value">{selected.infrastructure.networks}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Providers</div>
+                  <div className="detail-value">{selected.infrastructure.providers}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Last Observation</div>
+                  <div className="detail-value">{selected.infrastructure.lastObservation}</div>
+                </div>
               </div>
-              <div className="detail-row">
-                <div className="detail-label">Assets</div>
-                <div className="detail-value">{selected.infrastructure.assets}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Networks</div>
-                <div className="detail-value">{selected.infrastructure.networks}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Providers</div>
-                <div className="detail-value">{selected.infrastructure.providers}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Last Observation</div>
-                <div className="detail-value">{selected.infrastructure.lastObservation}</div>
-              </div>
-            </div>
-          </OrganizationDetailSection>
+            </SettingsSectionCard>
 
-          <OrganizationDetailSection title="Support">
-            <div className="detail-grid">
-              <div className="detail-row">
-                <div className="detail-label">Open Alerts</div>
-                <div className="detail-value">{selected.support.openAlerts}</div>
+            <SettingsSectionCard title="Support" className="span-full">
+              <div className="detail-grid">
+                <div className="detail-row">
+                  <div className="detail-label">Open Alerts</div>
+                  <div className="detail-value">{selected.support.openAlerts}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Open Recommendations</div>
+                  <div className="detail-value">{selected.support.openRecommendations}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Last Operator Review</div>
+                  <div className="detail-value">{selected.support.lastOperatorReview}</div>
+                </div>
+                <div className="detail-row">
+                  <div className="detail-label">Notes</div>
+                  <div className="detail-value">{selected.support.notes}</div>
+                </div>
               </div>
-              <div className="detail-row">
-                <div className="detail-label">Open Recommendations</div>
-                <div className="detail-value">{selected.support.openRecommendations}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Last Operator Review</div>
-                <div className="detail-value">{selected.support.lastOperatorReview}</div>
-              </div>
-              <div className="detail-row">
-                <div className="detail-label">Notes</div>
-                <div className="detail-value">{selected.support.notes}</div>
-              </div>
-            </div>
-          </OrganizationDetailSection>
+            </SettingsSectionCard>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
