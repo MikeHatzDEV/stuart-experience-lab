@@ -1616,7 +1616,7 @@ type Organization = {
  * The Environment Selector chooses the active Stuart Core context.
  * This workspace manages the business relationship around those environments.
  */
-const ORGANIZATIONS: Organization[] = [
+const INITIAL_ORGANIZATIONS: Organization[] = [
   {
     id: 'signal-lab',
     name: 'Signal Lab',
@@ -1810,10 +1810,80 @@ function relationshipHealthTone(health: number): 'ok' | 'warn' | 'error' {
   return 'error'
 }
 
+function cloneOrganization(org: Organization): Organization {
+  return structuredClone(org)
+}
+
+function OrgDetailRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="detail-row">
+      <div className="detail-label">{label}</div>
+      <div className="detail-value">{value}</div>
+    </div>
+  )
+}
+
+function OrgEditRow({
+  label,
+  children,
+}: {
+  label: string
+  children: ReactNode
+}) {
+  return (
+    <div className="org-edit-row">
+      <label className="org-edit-label">{label}</label>
+      <div className="org-edit-control">{children}</div>
+    </div>
+  )
+}
+
+const ORGANIZATION_STATUS_OPTIONS: OrganizationStatus[] = ['Active', 'Pilot', 'Prospect']
+
 function OrganizationsPage() {
-  const [selectedId, setSelectedId] = useState(ORGANIZATIONS[0].id)
-  const selected = ORGANIZATIONS.find((org) => org.id === selectedId) ?? ORGANIZATIONS[0]
-  const healthTone = relationshipHealthTone(selected.relationshipHealth)
+  const [organizations, setOrganizations] = useState<Organization[]>(INITIAL_ORGANIZATIONS)
+  const [selectedId, setSelectedId] = useState(INITIAL_ORGANIZATIONS[0].id)
+  const [isEditing, setIsEditing] = useState(false)
+  const [draft, setDraft] = useState<Organization | null>(null)
+
+  const selected = organizations.find((org) => org.id === selectedId) ?? organizations[0]
+  const display = isEditing && draft ? draft : selected
+  const healthTone = relationshipHealthTone(display.relationshipHealth)
+
+  const handleSelectOrganization = (id: string) => {
+    setIsEditing(false)
+    setDraft(null)
+    setSelectedId(id)
+  }
+
+  const handleEdit = () => {
+    setDraft(cloneOrganization(selected))
+    setIsEditing(true)
+  }
+
+  const handleCancel = () => {
+    setIsEditing(false)
+    setDraft(null)
+  }
+
+  const handleSave = () => {
+    if (!draft) return
+    const saved: Organization = {
+      ...draft,
+      primaryContact: draft.contacts.primary,
+      renewal: draft.subscription.renewalDate,
+      relationshipHealth: Math.min(100, Math.max(0, draft.relationshipHealth)),
+    }
+    setOrganizations((current) =>
+      current.map((org) => (org.id === saved.id ? saved : org)),
+    )
+    setIsEditing(false)
+    setDraft(null)
+  }
+
+  const updateDraft = (patch: Partial<Organization>) => {
+    setDraft((current) => (current ? { ...current, ...patch } : current))
+  }
 
   return (
     <div className="settings-shell organizations-shell">
@@ -1823,12 +1893,12 @@ function OrganizationsPage() {
           <p>{PAGE_META.organizations.description}</p>
         </div>
         <nav className="settings-nav-list">
-          {ORGANIZATIONS.map((org) => (
+          {organizations.map((org) => (
             <button
               key={org.id}
               type="button"
               className={`settings-nav-item org-nav-item${org.id === selectedId ? ' active' : ''}`}
-              onClick={() => setSelectedId(org.id)}
+              onClick={() => handleSelectOrganization(org.id)}
             >
               <span className="org-nav-item-name">{org.name}</span>
               <span className="org-nav-item-meta">
@@ -1842,142 +1912,436 @@ function OrganizationsPage() {
       <div className="settings-content">
         <div className="settings-page-content">
           <div className="settings-content-header org-content-header">
-            <div>
-              <h2>{selected.name}</h2>
-              <p>
-                {selected.type} · {selected.status}
-              </p>
+            <div className="org-content-header-main">
+              <div>
+                <h2>{display.name}</h2>
+                <p>
+                  {display.type} · {display.status}
+                </p>
+              </div>
+              <div className="org-relationship-health-stat" aria-label="Relationship Health">
+                <span className="org-health-stat-label">Relationship Health</span>
+                <span className={`org-health-stat-value tone-${healthTone}`}>
+                  {display.relationshipHealth}%
+                </span>
+              </div>
             </div>
-            <div className="org-relationship-health-stat" aria-label="Relationship Health">
-              <span className="org-health-stat-label">Relationship Health</span>
-              <span className={`org-health-stat-value tone-${healthTone}`}>
-                {selected.relationshipHealth}%
-              </span>
+            <div className="org-content-header-toolbar">
+              {isEditing ? (
+                <p className="org-edit-helper">
+                  Prototype only — changes are stored in this browser session.
+                </p>
+              ) : null}
+              <div className="org-content-actions">
+                {isEditing ? (
+                  <>
+                    <button type="button" className="settings-action-btn primary" onClick={handleSave}>
+                      Save
+                    </button>
+                    <button type="button" className="settings-action-btn" onClick={handleCancel}>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" className="settings-action-btn" onClick={handleEdit}>
+                    Edit
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="settings-sections">
             <SettingsSectionCard title="Overview" className="span-full">
-              <div className="detail-grid">
-                <div className="detail-row">
-                  <div className="detail-label">Organization</div>
-                  <div className="detail-value">{selected.name}</div>
+              {isEditing && draft ? (
+                <div className="org-edit-grid">
+                  <OrgEditRow label="Organization name">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.name}
+                      onChange={(e) => updateDraft({ name: e.target.value })}
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Type">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.type}
+                      onChange={(e) => updateDraft({ type: e.target.value })}
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Status">
+                    <select
+                      className="setting-select org-edit-input"
+                      value={draft.status}
+                      onChange={(e) =>
+                        updateDraft({ status: e.target.value as OrganizationStatus })
+                      }
+                    >
+                      {ORGANIZATION_STATUS_OPTIONS.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </OrgEditRow>
+                  <OrgEditRow label="Relationship Health">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={draft.relationshipHealth}
+                      onChange={(e) =>
+                        updateDraft({ relationshipHealth: Number(e.target.value) || 0 })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Current Stuart Core">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.stuartCore}
+                      onChange={(e) => updateDraft({ stuartCore: e.target.value })}
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Last Check-In">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.lastCheckIn}
+                      onChange={(e) => updateDraft({ lastCheckIn: e.target.value })}
+                    />
+                  </OrgEditRow>
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Type</div>
-                  <div className="detail-value">{selected.type}</div>
+              ) : (
+                <div className="detail-grid">
+                  <OrgDetailRow label="Organization" value={selected.name} />
+                  <OrgDetailRow label="Type" value={selected.type} />
+                  <OrgDetailRow label="Status" value={selected.status} />
+                  <OrgDetailRow
+                    label="Relationship Health"
+                    value={
+                      <span className={`org-health-value tone-${healthTone}`}>
+                        {selected.relationshipHealth}%
+                      </span>
+                    }
+                  />
+                  <OrgDetailRow label="Current Stuart Core" value={selected.stuartCore} />
+                  <OrgDetailRow label="Last Check-In" value={selected.lastCheckIn} />
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Status</div>
-                  <div className="detail-value">{selected.status}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Relationship Health</div>
-                  <div className={`detail-value org-health-value tone-${healthTone}`}>
-                    {selected.relationshipHealth}%
-                  </div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Current Stuart Core</div>
-                  <div className="detail-value">{selected.stuartCore}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Last Check-In</div>
-                  <div className="detail-value">{selected.lastCheckIn}</div>
-                </div>
-              </div>
+              )}
             </SettingsSectionCard>
 
             <SettingsSectionCard title="Contacts">
-              <div className="detail-grid">
-                <div className="detail-row">
-                  <div className="detail-label">Primary Contact</div>
-                  <div className="detail-value">{selected.contacts.primary}</div>
+              {isEditing && draft ? (
+                <div className="org-edit-grid">
+                  <OrgEditRow label="Primary Contact">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.contacts.primary}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          contacts: { ...draft.contacts, primary: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Technical Contact">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.contacts.technical}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          contacts: { ...draft.contacts, technical: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Billing Contact">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.contacts.billing}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          contacts: { ...draft.contacts, billing: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Emergency Contact">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.contacts.emergency}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          contacts: { ...draft.contacts, emergency: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Technical Contact</div>
-                  <div className="detail-value">{selected.contacts.technical}</div>
+              ) : (
+                <div className="detail-grid">
+                  <OrgDetailRow label="Primary Contact" value={selected.contacts.primary} />
+                  <OrgDetailRow label="Technical Contact" value={selected.contacts.technical} />
+                  <OrgDetailRow label="Billing Contact" value={selected.contacts.billing} />
+                  <OrgDetailRow label="Emergency Contact" value={selected.contacts.emergency} />
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Billing Contact</div>
-                  <div className="detail-value">{selected.contacts.billing}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Emergency Contact</div>
-                  <div className="detail-value">{selected.contacts.emergency}</div>
-                </div>
-              </div>
+              )}
             </SettingsSectionCard>
 
             <SettingsSectionCard title="Subscription">
-              <div className="detail-grid">
-                <div className="detail-row">
-                  <div className="detail-label">Plan</div>
-                  <div className="detail-value">{selected.subscription.plan}</div>
+              {isEditing && draft ? (
+                <div className="org-edit-grid">
+                  <OrgEditRow label="Plan">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.subscription.plan}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          subscription: { ...draft.subscription, plan: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Billing Status">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.subscription.billingStatus}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          subscription: { ...draft.subscription, billingStatus: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Anniversary Date">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.subscription.anniversaryDate}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          subscription: { ...draft.subscription, anniversaryDate: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Renewal Date">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.subscription.renewalDate}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          subscription: { ...draft.subscription, renewalDate: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Monthly Fee">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.subscription.monthlyFee}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          subscription: { ...draft.subscription, monthlyFee: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Billing Status</div>
-                  <div className="detail-value">{selected.subscription.billingStatus}</div>
+              ) : (
+                <div className="detail-grid">
+                  <OrgDetailRow label="Plan" value={selected.subscription.plan} />
+                  <OrgDetailRow label="Billing Status" value={selected.subscription.billingStatus} />
+                  <OrgDetailRow label="Anniversary Date" value={selected.subscription.anniversaryDate} />
+                  <OrgDetailRow label="Renewal Date" value={selected.subscription.renewalDate} />
+                  <OrgDetailRow label="Monthly Fee" value={selected.subscription.monthlyFee} />
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Anniversary Date</div>
-                  <div className="detail-value">{selected.subscription.anniversaryDate}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Renewal Date</div>
-                  <div className="detail-value">{selected.subscription.renewalDate}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Monthly Fee</div>
-                  <div className="detail-value">{selected.subscription.monthlyFee}</div>
-                </div>
-              </div>
+              )}
             </SettingsSectionCard>
 
             <SettingsSectionCard title="Infrastructure">
-              <div className="detail-grid">
-                <div className="detail-row">
-                  <div className="detail-label">Stuart Core Version</div>
-                  <div className="detail-value">{selected.infrastructure.stuartCoreVersion}</div>
+              {isEditing && draft ? (
+                <div className="org-edit-grid">
+                  <OrgEditRow label="Stuart Core Version">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.infrastructure.stuartCoreVersion}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          infrastructure: {
+                            ...draft.infrastructure,
+                            stuartCoreVersion: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Assets">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.infrastructure.assets}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          infrastructure: { ...draft.infrastructure, assets: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Networks">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.infrastructure.networks}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          infrastructure: { ...draft.infrastructure, networks: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Providers">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.infrastructure.providers}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          infrastructure: { ...draft.infrastructure, providers: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Last Observation">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.infrastructure.lastObservation}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          infrastructure: {
+                            ...draft.infrastructure,
+                            lastObservation: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Assets</div>
-                  <div className="detail-value">{selected.infrastructure.assets}</div>
+              ) : (
+                <div className="detail-grid">
+                  <OrgDetailRow
+                    label="Stuart Core Version"
+                    value={selected.infrastructure.stuartCoreVersion}
+                  />
+                  <OrgDetailRow label="Assets" value={selected.infrastructure.assets} />
+                  <OrgDetailRow label="Networks" value={selected.infrastructure.networks} />
+                  <OrgDetailRow label="Providers" value={selected.infrastructure.providers} />
+                  <OrgDetailRow
+                    label="Last Observation"
+                    value={selected.infrastructure.lastObservation}
+                  />
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Networks</div>
-                  <div className="detail-value">{selected.infrastructure.networks}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Providers</div>
-                  <div className="detail-value">{selected.infrastructure.providers}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Last Observation</div>
-                  <div className="detail-value">{selected.infrastructure.lastObservation}</div>
-                </div>
-              </div>
+              )}
             </SettingsSectionCard>
 
             <SettingsSectionCard title="Support" className="span-full">
-              <div className="detail-grid">
-                <div className="detail-row">
-                  <div className="detail-label">Open Alerts</div>
-                  <div className="detail-value">{selected.support.openAlerts}</div>
+              {isEditing && draft ? (
+                <div className="org-edit-grid">
+                  <OrgEditRow label="Open Alerts">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.support.openAlerts}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          support: { ...draft.support, openAlerts: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Open Recommendations">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.support.openRecommendations}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          support: { ...draft.support, openRecommendations: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Last Operator Review">
+                    <input
+                      className="setting-input org-edit-input"
+                      type="text"
+                      value={draft.support.lastOperatorReview}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          support: { ...draft.support, lastOperatorReview: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
+                  <OrgEditRow label="Notes">
+                    <textarea
+                      className="setting-input org-edit-textarea"
+                      rows={3}
+                      value={draft.support.notes}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          support: { ...draft.support, notes: e.target.value },
+                        })
+                      }
+                    />
+                  </OrgEditRow>
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Open Recommendations</div>
-                  <div className="detail-value">{selected.support.openRecommendations}</div>
+              ) : (
+                <div className="detail-grid">
+                  <OrgDetailRow label="Open Alerts" value={selected.support.openAlerts} />
+                  <OrgDetailRow
+                    label="Open Recommendations"
+                    value={selected.support.openRecommendations}
+                  />
+                  <OrgDetailRow
+                    label="Last Operator Review"
+                    value={selected.support.lastOperatorReview}
+                  />
+                  <OrgDetailRow label="Notes" value={selected.support.notes} />
                 </div>
-                <div className="detail-row">
-                  <div className="detail-label">Last Operator Review</div>
-                  <div className="detail-value">{selected.support.lastOperatorReview}</div>
-                </div>
-                <div className="detail-row">
-                  <div className="detail-label">Notes</div>
-                  <div className="detail-value">{selected.support.notes}</div>
-                </div>
-              </div>
+              )}
             </SettingsSectionCard>
           </div>
         </div>

@@ -1208,9 +1208,78 @@ button.panel-clickable {
 
 .org-content-header {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.org-content-header-main {
+  display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  width: 100%;
+}
+
+.org-content-header-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.org-content-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.org-edit-helper {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.org-edit-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.org-edit-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.org-edit-row:last-child {
+  border-bottom: none;
+}
+
+.org-edit-label {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.org-edit-control {
+  min-width: 0;
+}
+
+.org-edit-input,
+.org-edit-textarea {
+  width: 100%;
+  min-width: 0;
+}
+
+.org-edit-textarea {
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.45;
 }
 
 .org-relationship-health-stat {
