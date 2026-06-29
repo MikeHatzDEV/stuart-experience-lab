@@ -585,6 +585,53 @@ function formatClock(date: Date) {
   })
 }
 
+function formatHeaderDateTime(date: Date) {
+  const datePart = date.toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+  })
+  const timePart = date.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return `${datePart} · ${timePart}`
+}
+
+function formatRelativeObservationAge(observedAt: Date, now: Date) {
+  const elapsedSeconds = Math.max(0, Math.floor((now.getTime() - observedAt.getTime()) / 1000))
+  if (elapsedSeconds < 60) {
+    return elapsedSeconds === 1 ? '1 second ago' : `${elapsedSeconds} seconds ago`
+  }
+  const elapsedMinutes = Math.floor(elapsedSeconds / 60)
+  if (elapsedMinutes < 60) {
+    return elapsedMinutes === 1 ? '1 minute ago' : `${elapsedMinutes} minutes ago`
+  }
+  const elapsedHours = Math.floor(elapsedMinutes / 60)
+  return elapsedHours === 1 ? '1 hour ago' : `${elapsedHours} hours ago`
+}
+
+// Future tooltip on relative freshness:
+// Last observation
+// 2026-06-29 15:10:52 EDT
+function TelemetryFreshnessStat({
+  lastObservationAt,
+  relativeNow,
+}: {
+  lastObservationAt: Date
+  relativeNow: Date
+}) {
+  return (
+    <div className="ops-live-stat">
+      <span className="ops-live-stat-label">Updated</span>
+      <span className="ops-telemetry-freshness">
+        {formatRelativeObservationAge(lastObservationAt, relativeNow)}
+      </span>
+    </div>
+  )
+}
+
 function sparklinePath(
   values: number[],
   width: number,
@@ -1100,7 +1147,10 @@ function OperationsConsole() {
   const [memoryRange, setMemoryRange] = useState<TimeRangeId>('1m')
   const [gpuRange, setGpuRange] = useState<TimeRangeId>('1m')
   const [diskRange, setDiskRange] = useState<TimeRangeId>('1m')
-  const [lastUpdate, setLastUpdate] = useState(() => new Date())
+  const [lastObservationAt, setLastObservationAt] = useState(
+    () => new Date(Date.now() - 12_000),
+  )
+  const [relativeNow, setRelativeNow] = useState(() => new Date())
   const cpuSeries = useMetricTelemetry('cpu', cpuRange)
   const memorySeries = useMetricTelemetry('memory', memoryRange)
   const gpuSeries = useMetricTelemetry('gpu', gpuRange)
@@ -1116,8 +1166,16 @@ function OperationsConsole() {
   const currentDisk = diskSeries[diskSeries.length - 1] ?? METRIC_BASELINES.disk.base
 
   useEffect(() => {
-    const tick = window.setInterval(() => setLastUpdate(new Date()), 1000)
-    return () => window.clearInterval(tick)
+    const refreshObservation = window.setInterval(() => {
+      setLastObservationAt(new Date())
+    }, 12_000)
+    const tickNow = window.setInterval(() => {
+      setRelativeNow(new Date())
+    }, 1000)
+    return () => {
+      window.clearInterval(refreshObservation)
+      window.clearInterval(tickNow)
+    }
   }, [])
 
   const pushTask = useCallback(() => {
@@ -1190,10 +1248,10 @@ function OperationsConsole() {
               Active
             </span>
           </div>
-          <div className="ops-live-stat">
-            <span className="ops-live-stat-label">Last update</span>
-            <span className="ops-mono-value">{formatClock(lastUpdate)}</span>
-          </div>
+          <TelemetryFreshnessStat
+            lastObservationAt={lastObservationAt}
+            relativeNow={relativeNow}
+          />
           <div className="ops-live-stat">
             <span className="ops-live-stat-label">Telemetry</span>
             <span className="ops-stream-indicator">
@@ -1271,7 +1329,6 @@ function OperationsConsole() {
 }
 
 function NetworkConsole() {
-  const [lastUpdate, setLastUpdate] = useState(() => new Date())
   const [wanLatency, setWanLatency] = useState(() => Array.from({ length: GRAPH_POINTS }, () => 18))
   const [packetLoss, setPacketLoss] = useState(() => Array.from({ length: GRAPH_POINTS }, () => 0))
   const [devicesOnline, setDevicesOnline] = useState(() =>
@@ -1305,8 +1362,6 @@ function NetworkConsole() {
 
   useEffect(() => {
     const tick = window.setInterval(() => {
-      setLastUpdate(new Date())
-
       setCurrentLatency((prev) => {
         let next = prev + (Math.random() - 0.5) * 6
         if (Math.random() < 0.04) next += 40 + Math.random() * 60
@@ -1397,10 +1452,6 @@ function NetworkConsole() {
               <span className="ops-runtime-dot" />
               Active
             </span>
-          </div>
-          <div className="ops-live-stat">
-            <span className="ops-live-stat-label">Last update</span>
-            <span className="ops-mono-value">{formatClock(lastUpdate)}</span>
           </div>
           <div className="ops-live-stat">
             <span className="ops-live-stat-label">Telemetry</span>
@@ -3930,7 +3981,13 @@ function PageContent({
 function App() {
   const [activePage, setActivePage] = useState<PageId>('operations')
   const [currentEnvironment, setCurrentEnvironment] = useState<Environment>(MOCK_ENVIRONMENTS[0])
+  const [headerClock, setHeaderClock] = useState(() => new Date())
   const meta = PAGE_META[activePage]
+
+  useEffect(() => {
+    const tick = window.setInterval(() => setHeaderClock(new Date()), 30_000)
+    return () => window.clearInterval(tick)
+  }, [])
 
   return (
     <div className="app-shell">
@@ -3967,12 +4024,11 @@ function App() {
             </div>
           </div>
           <div className="header-right">
-            <span className="hide-mobile">Local session</span>
             <div className="status-pill">
               <span className="status-dot" />
               Runtime active
             </div>
-            <span className="hide-mobile">Mon 08 Jun · 07:15</span>
+            <span className="hide-mobile header-clock">{formatHeaderDateTime(headerClock)}</span>
           </div>
         </header>
 
