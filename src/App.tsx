@@ -7,6 +7,17 @@ import {
 } from './app/version'
 import './App.css'
 
+// Environment Status footer — answers "What environment am I viewing?"
+// Future examples (comment only):
+// Preview Build / Mock stewardship data
+// Preview Build / Live Signal Lab telemetry
+// Production / Connected to Signal Lab
+// Production / Connected to ABC Manufacturing
+const ENVIRONMENT_STATUS_FOOTER = {
+  buildLabel: 'Preview Build',
+  dataLabel: 'Mock stewardship data',
+} as const
+
 type PageId = 'operations' | 'organizations' | 'network' | 'services' | 'assets' | 'audit' | 'settings'
 
 const NAV_ITEMS: { id: PageId; label: string }[] = [
@@ -1411,10 +1422,10 @@ const STEWARDSHIP_ITEMS: StewardshipItem[] = [
     monthlyCost: '$20',
     seatsUsed: '1 of 1',
     dependsOn: ['Windows Update', 'Chrome'],
-    protectsSupports: ['Experience Lab development'],
-    relatedAssets: ['MSI-Stuart', 'Stuart Experience Lab repo'],
+    protectsSupports: ['Stuart prototype development'],
+    relatedAssets: ['MSI-Stuart', 'Stuart prototype repo'],
     relatedRecommendations: [],
-    observation: 'Cursor is current and actively used for Experience Lab work.',
+    observation: 'Cursor is current and actively used for prototype development work.',
     reason: 'Version, license, and recent usage all align with stewardship policy.',
     recommendedAction: 'No action required.',
     priority: 'Low',
@@ -3408,7 +3419,7 @@ function AuditPage({ currentEnvironment }: { currentEnvironment: Environment }) 
       actor: 'hatzopoulos',
       action: 'Settings viewed',
       detail: 'Providers section opened',
-      observation: 'Operator opened Providers settings in the Experience Lab shell.',
+      observation: 'Operator opened Providers settings in the Operations Assistant shell.',
       reason: 'Routine configuration review; no provider state changed.',
       confidence: '100%',
       recommendedAction: 'No action required.',
@@ -4956,7 +4967,12 @@ function App() {
             </button>
           ))}
         </nav>
-        <div className="sidebar-footer">Experience Lab prototype · static sample data</div>
+        <div className="sidebar-footer" aria-label="Environment status">
+          <div className="environment-status-panel">
+            <div className="environment-status-primary">{ENVIRONMENT_STATUS_FOOTER.buildLabel}</div>
+            <div className="environment-status-secondary">{ENVIRONMENT_STATUS_FOOTER.dataLabel}</div>
+          </div>
+        </div>
       </aside>
 
       <div className="main-column">
