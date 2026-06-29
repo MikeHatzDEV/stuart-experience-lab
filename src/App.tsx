@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { EnvironmentSelector, type Environment } from './EnvironmentSelector'
 import {
   DEFAULT_CORE_LABEL,
@@ -34,7 +34,7 @@ const PAGE_META: Record<PageId, { title: string; description: string }> = {
   },
   services: {
     title: 'Services & Applications',
-    description: 'What services and applications Stuart is running or connected to — internal engines and external systems.',
+    description: 'Monitor software, services, updates, licenses, and operational stewardship.',
   },
   assets: {
     title: 'Asset Explorer',
@@ -1010,69 +1010,6 @@ function LiveFeedPanel({
   )
 }
 
-function ServiceRow({
-  name,
-  status,
-  tone,
-  lastActivity,
-  description,
-}: {
-  name: string
-  status: string
-  tone: 'ok' | 'warn' | 'error' | 'info'
-  lastActivity: string
-  description: string
-}) {
-  return (
-    <button type="button" className="service-row panel-clickable">
-      <div className="service-row-main">
-        <span className={`service-row-dot tone-${tone}`} />
-        <div>
-          <div className="service-row-name">{name}</div>
-          <div className="service-row-desc">{description}</div>
-        </div>
-      </div>
-      <div className="service-row-meta">
-        <StatusBadge label={status} tone={tone} />
-        <span className="service-row-time">{lastActivity}</span>
-      </div>
-    </button>
-  )
-}
-
-function ApplicationRow({
-  name,
-  status,
-  tone,
-  lastChecked,
-  detail,
-  purpose,
-}: {
-  name: string
-  status: string
-  tone: 'ok' | 'warn' | 'error' | 'info'
-  lastChecked: string
-  detail: string
-  purpose: string
-}) {
-  return (
-    <button type="button" className={`application-row tone-${tone} panel-clickable`}>
-      <div className="application-row-main">
-        <span className={`application-row-dot tone-${tone}`} />
-        <div>
-          <div className="application-row-top">
-            <span className="application-row-name">{name}</span>
-            <StatusBadge label={status} tone={tone} />
-          </div>
-          <div className="application-row-detail">{detail}</div>
-          <div className="application-row-purpose">{purpose}</div>
-        </div>
-      </div>
-      <span className="application-row-time">Last checked {lastChecked}</span>
-    </button>
-  )
-}
-
 function ConnectedSystemsOverview() {
   const attentionCount = STUART_PROVIDERS.filter((p) => p.tone === 'warn').length
 
@@ -1103,52 +1040,1052 @@ function ConnectedSystemsOverview() {
   )
 }
 
-function ServicesApplicationsPage() {
-  const attentionServices = STUART_SERVICES.filter((s) => s.tone === 'warn').length
-  const attentionProviders = STUART_PROVIDERS.filter((p) => p.tone === 'warn').length
+type StewardshipKind = 'service' | 'application'
+type StewardshipStatus = 'Healthy' | 'Attention' | 'Critical' | 'Stale' | 'License Review'
+
+type StewardshipItem = {
+  id: string
+  name: string
+  kind: StewardshipKind
+  healthLabel: string
+  healthTone: 'ok' | 'warn' | 'error' | 'info'
+  stewardshipStatus: StewardshipStatus
+  vendor: string
+  criticality: string
+  installedOn: string
+  businessOwner: string
+  currentVersion: string
+  latestKnownVersion: string
+  versionStatus: string
+  lastUpdated: string
+  stalenessType: string
+  stalenessDetail: string
+  runningState: string
+  lastSuccessfulCheck: string
+  lastFailure: string
+  confidence: string
+  licenseStatus: string
+  renewalDate: string
+  monthlyCost: string
+  seatsUsed: string
+  dependsOn: string[]
+  protectsSupports: string[]
+  relatedAssets: string[]
+  relatedRecommendations: string[]
+  observation: string
+  reason: string
+  recommendedAction: string
+  priority: string
+}
+
+const STEWARDSHIP_ITEMS: StewardshipItem[] = [
+  {
+    id: 'unifi-network',
+    name: 'UniFi Network',
+    kind: 'service',
+    healthLabel: 'Healthy',
+    healthTone: 'ok',
+    stewardshipStatus: 'Healthy',
+    vendor: 'Ubiquiti',
+    criticality: 'Critical',
+    installedOn: 'TrueNAS VM · unifi-controller',
+    businessOwner: 'Michael',
+    currentVersion: '9.1.120',
+    latestKnownVersion: '9.1.120',
+    versionStatus: 'Current',
+    lastUpdated: '2026-05-18',
+    stalenessType: 'None',
+    stalenessDetail: 'No staleness detected.',
+    runningState: 'Running',
+    lastSuccessfulCheck: '30 seconds ago',
+    lastFailure: 'None in 14 days',
+    confidence: '99%',
+    licenseStatus: 'Included with hardware',
+    renewalDate: 'Not applicable',
+    monthlyCost: '$0',
+    seatsUsed: 'N/A',
+    dependsOn: ['TrueNAS SMB', 'Windows Update'],
+    protectsSupports: ['Gateway', 'Switches', 'Access Points'],
+    relatedAssets: ['UDM-Pro', 'USW-24', 'AP-Lounge'],
+    relatedRecommendations: [],
+    observation: 'UniFi controller is reachable and reporting expected device inventory.',
+    reason: 'All managed devices responded during the last poll cycle.',
+    recommendedAction: 'No action required.',
+    priority: 'Low',
+  },
+  {
+    id: 'veeam-agent',
+    name: 'Veeam Agent',
+    kind: 'service',
+    healthLabel: 'Attention',
+    healthTone: 'warn',
+    stewardshipStatus: 'Attention',
+    vendor: 'Veeam',
+    criticality: 'Critical',
+    installedOn: 'MSI · Stuart host',
+    businessOwner: 'Michael',
+    currentVersion: '6.1.2.349',
+    latestKnownVersion: '6.1.2.349',
+    versionStatus: 'Current',
+    lastUpdated: '2026-04-02',
+    stalenessType: 'Operational Staleness',
+    stalenessDetail: 'Veeam has not completed a backup in 4 days.',
+    runningState: 'Running · job overdue',
+    lastSuccessfulCheck: '4 days ago',
+    lastFailure: 'Job skipped · host unavailable',
+    confidence: '94%',
+    licenseStatus: 'Licensed',
+    renewalDate: '2026-11-01',
+    monthlyCost: '$0',
+    seatsUsed: '1 of 1',
+    dependsOn: ['TrueNAS SMB', 'Windows Update'],
+    protectsSupports: ['Stuart host', 'Operator workstation'],
+    relatedAssets: ['MSI-Stuart', 'Backup repository'],
+    relatedRecommendations: ['Verify backup schedule', 'Confirm repository free space'],
+    observation: 'Veeam agent is running but no successful backup completed recently.',
+    reason: 'Last backup job did not finish during the expected nightly window.',
+    recommendedAction: 'Run a manual backup and verify repository connectivity.',
+    priority: 'High',
+  },
+  {
+    id: 'backblaze',
+    name: 'Backblaze',
+    kind: 'service',
+    healthLabel: 'Attention',
+    healthTone: 'warn',
+    stewardshipStatus: 'Attention',
+    vendor: 'Backblaze',
+    criticality: 'High',
+    installedOn: 'MSI · cloud sync agent',
+    businessOwner: 'Michael',
+    currentVersion: '9.0.2.4841',
+    latestKnownVersion: '9.0.2.4841',
+    versionStatus: 'Current',
+    lastUpdated: '2026-03-10',
+    stalenessType: 'Configuration Staleness',
+    stalenessDetail: 'Backblaze no longer protects Documents.',
+    runningState: 'Running · partial coverage',
+    lastSuccessfulCheck: '18 minutes ago',
+    lastFailure: 'Excluded folder detected',
+    confidence: '91%',
+    licenseStatus: 'Active subscription',
+    renewalDate: '2026-09-15',
+    monthlyCost: '$9',
+    seatsUsed: '1 device',
+    dependsOn: ['Windows Update'],
+    protectsSupports: ['Desktop', 'Pictures'],
+    relatedAssets: ['MSI-Stuart', 'Documents folder'],
+    relatedRecommendations: ['Restore Documents protection'],
+    observation: 'Backblaze is online but a protected folder was removed from the backup set.',
+    reason: 'Documents path changed after a local folder reorganization.',
+    recommendedAction: 'Re-add Documents to the protected set and confirm sync.',
+    priority: 'Medium',
+  },
+  {
+    id: 'windows-update',
+    name: 'Windows Update',
+    kind: 'service',
+    healthLabel: 'Stale',
+    healthTone: 'warn',
+    stewardshipStatus: 'Stale',
+    vendor: 'Microsoft',
+    criticality: 'High',
+    installedOn: 'MSI · OS service',
+    businessOwner: 'Michael',
+    currentVersion: 'KB5058499',
+    latestKnownVersion: 'KB5060999',
+    versionStatus: 'Behind',
+    lastUpdated: '2026-04-28',
+    stalenessType: 'Version Staleness',
+    stalenessDetail: 'Pending quality update not installed.',
+    runningState: 'Running · updates pending',
+    lastSuccessfulCheck: '2 hours ago',
+    lastFailure: 'Install deferred by policy',
+    confidence: '88%',
+    licenseStatus: 'Included with Windows',
+    renewalDate: 'Not applicable',
+    monthlyCost: '$0',
+    seatsUsed: 'N/A',
+    dependsOn: [],
+    protectsSupports: ['Operating system', 'All installed services'],
+    relatedAssets: ['MSI-Stuart'],
+    relatedRecommendations: ['Schedule maintenance window'],
+    observation: 'Windows Update service is healthy but updates are pending installation.',
+    reason: 'Operator deferred the last maintenance reboot.',
+    recommendedAction: 'Schedule a maintenance window to apply pending updates.',
+    priority: 'Medium',
+  },
+  {
+    id: 'truenas-smb',
+    name: 'TrueNAS SMB',
+    kind: 'service',
+    healthLabel: 'Attention',
+    healthTone: 'warn',
+    stewardshipStatus: 'Attention',
+    vendor: 'TrueNAS',
+    criticality: 'Critical',
+    installedOn: 'TrueNAS-Core',
+    businessOwner: 'Michael',
+    currentVersion: '24.10.2',
+    latestKnownVersion: '24.10.2',
+    versionStatus: 'Current',
+    lastUpdated: '2026-05-01',
+    stalenessType: 'Knowledge Staleness',
+    stalenessDetail: 'TrueNAS SMB has not been verified in 45 days.',
+    runningState: 'Running',
+    lastSuccessfulCheck: '45 days ago',
+    lastFailure: 'None recorded',
+    confidence: '76%',
+    licenseStatus: 'Community edition',
+    renewalDate: 'Not applicable',
+    monthlyCost: '$0',
+    seatsUsed: 'N/A',
+    dependsOn: ['UniFi Network'],
+    protectsSupports: ['Shared storage', 'Backup targets', 'Media shares'],
+    relatedAssets: ['TrueNAS-Core', 'Share-Operations'],
+    relatedRecommendations: ['Run share verification', 'Review SMB permissions'],
+    observation: 'SMB shares appear online but stewardship verification is overdue.',
+    reason: 'No recent operator or Stuart verification of share permissions and accessibility.',
+    recommendedAction: 'Run a share access verification from a managed workstation.',
+    priority: 'Medium',
+  },
+  {
+    id: 'chrome',
+    name: 'Chrome',
+    kind: 'application',
+    healthLabel: 'Attention',
+    healthTone: 'warn',
+    stewardshipStatus: 'Attention',
+    vendor: 'Google',
+    criticality: 'Medium',
+    installedOn: 'MSI · operator workstation',
+    businessOwner: 'Michael',
+    currentVersion: '137.0.7151.56',
+    latestKnownVersion: '139.0.7258.42',
+    versionStatus: 'Behind',
+    lastUpdated: '2026-05-12',
+    stalenessType: 'Version Staleness',
+    stalenessDetail: 'Chrome is 2 versions behind.',
+    runningState: 'Installed',
+    lastSuccessfulCheck: 'Today · 06:40',
+    lastFailure: 'None',
+    confidence: '97%',
+    licenseStatus: 'Free',
+    renewalDate: 'Not applicable',
+    monthlyCost: '$0',
+    seatsUsed: '1 user',
+    dependsOn: ['Windows Update'],
+    protectsSupports: ['Operator browsing', 'Stuart web console'],
+    relatedAssets: ['MSI-Stuart'],
+    relatedRecommendations: ['Update Chrome to latest stable'],
+    observation: 'Chrome is in active use but not on the latest stable release.',
+    reason: 'Automatic updates were paused during a recent troubleshooting session.',
+    recommendedAction: 'Resume updates or install the latest stable build.',
+    priority: 'Medium',
+  },
+  {
+    id: 'microsoft-365',
+    name: 'Microsoft 365',
+    kind: 'application',
+    healthLabel: 'Current',
+    healthTone: 'ok',
+    stewardshipStatus: 'Healthy',
+    vendor: 'Microsoft',
+    criticality: 'High',
+    installedOn: 'Cloud + local Office apps',
+    businessOwner: 'Michael',
+    currentVersion: '2505',
+    latestKnownVersion: '2505',
+    versionStatus: 'Current',
+    lastUpdated: '2026-06-01',
+    stalenessType: 'None',
+    stalenessDetail: 'No staleness detected.',
+    runningState: 'Active',
+    lastSuccessfulCheck: '1 hour ago',
+    lastFailure: 'None in 30 days',
+    confidence: '99%',
+    licenseStatus: 'Licensed',
+    renewalDate: '2027-01-15',
+    monthlyCost: '$12.50',
+    seatsUsed: '2 of 5',
+    dependsOn: ['Windows Update'],
+    protectsSupports: ['Email', 'Documents', 'Collaboration'],
+    relatedAssets: ['Outlook', 'OneDrive'],
+    relatedRecommendations: [],
+    observation: 'Microsoft 365 subscription and apps are current.',
+    reason: 'License, client build, and sign-in health are within policy.',
+    recommendedAction: 'No action required.',
+    priority: 'Low',
+  },
+  {
+    id: 'quickbooks',
+    name: 'QuickBooks',
+    kind: 'application',
+    healthLabel: 'License Review',
+    healthTone: 'info',
+    stewardshipStatus: 'License Review',
+    vendor: 'Intuit',
+    criticality: 'Medium',
+    installedOn: 'ABC workstation',
+    businessOwner: 'Jane Smith',
+    currentVersion: '2024 R8',
+    latestKnownVersion: '2024 R8',
+    versionStatus: 'Current',
+    lastUpdated: '2026-02-14',
+    stalenessType: 'None',
+    stalenessDetail: 'License renewal approaching.',
+    runningState: 'Installed',
+    lastSuccessfulCheck: 'Yesterday',
+    lastFailure: 'None',
+    confidence: '93%',
+    licenseStatus: 'Renewal due soon',
+    renewalDate: '2026-07-15',
+    monthlyCost: '$38',
+    seatsUsed: '1 of 1',
+    dependsOn: ['Windows Update'],
+    protectsSupports: ['Accounts payable', 'Invoicing'],
+    relatedAssets: ['ABC-Accounting-PC'],
+    relatedRecommendations: ['Confirm renewal with billing contact'],
+    observation: 'QuickBooks is current but license renewal is approaching.',
+    reason: 'Annual subscription enters renewal window in 45 days.',
+    recommendedAction: 'Confirm renewal approval with Jane Smith.',
+    priority: 'Medium',
+  },
+  {
+    id: 'adobe-acrobat',
+    name: 'Adobe Acrobat',
+    kind: 'application',
+    healthLabel: 'Stale',
+    healthTone: 'warn',
+    stewardshipStatus: 'Stale',
+    vendor: 'Adobe',
+    criticality: 'Low',
+    installedOn: 'MSI · operator workstation',
+    businessOwner: 'Michael',
+    currentVersion: '2023.008.20470',
+    latestKnownVersion: '2025.001.20643',
+    versionStatus: 'Behind',
+    lastUpdated: '2024-12-02',
+    stalenessType: 'Usage Staleness',
+    stalenessDetail: 'Adobe Acrobat has not been opened in 18 months.',
+    runningState: 'Installed · inactive',
+    lastSuccessfulCheck: '18 months ago',
+    lastFailure: 'None',
+    confidence: '82%',
+    licenseStatus: 'Licensed',
+    renewalDate: '2026-08-01',
+    monthlyCost: '$14.99',
+    seatsUsed: '1 of 1',
+    dependsOn: ['Windows Update'],
+    protectsSupports: ['PDF review'],
+    relatedAssets: ['MSI-Stuart'],
+    relatedRecommendations: ['Review license need', 'Consider removal'],
+    observation: 'Acrobat remains installed but shows no recent usage.',
+    reason: 'No launch events observed in 18 months.',
+    recommendedAction: 'Confirm whether the license is still needed or remove the application.',
+    priority: 'Low',
+  },
+  {
+    id: 'cursor',
+    name: 'Cursor',
+    kind: 'application',
+    healthLabel: 'Healthy',
+    healthTone: 'ok',
+    stewardshipStatus: 'Healthy',
+    vendor: 'Cursor',
+    criticality: 'Medium',
+    installedOn: 'MSI · operator workstation',
+    businessOwner: 'Michael',
+    currentVersion: '1.2.4',
+    latestKnownVersion: '1.2.4',
+    versionStatus: 'Current',
+    lastUpdated: '2026-06-20',
+    stalenessType: 'None',
+    stalenessDetail: 'No staleness detected.',
+    runningState: 'Active',
+    lastSuccessfulCheck: 'Today · 07:05',
+    lastFailure: 'None',
+    confidence: '98%',
+    licenseStatus: 'Pro subscription',
+    renewalDate: '2026-12-01',
+    monthlyCost: '$20',
+    seatsUsed: '1 of 1',
+    dependsOn: ['Windows Update', 'Chrome'],
+    protectsSupports: ['Experience Lab development'],
+    relatedAssets: ['MSI-Stuart', 'Stuart Experience Lab repo'],
+    relatedRecommendations: [],
+    observation: 'Cursor is current and actively used for Experience Lab work.',
+    reason: 'Version, license, and recent usage all align with stewardship policy.',
+    recommendedAction: 'No action required.',
+    priority: 'Low',
+  },
+]
+
+const STEWARDSHIP_SUMMARY = {
+  healthy: 42,
+  requireAttention: 3,
+  critical: 1,
+  outdated: 6,
+  licensesExpiring: 2,
+}
+
+function stewardshipStatusTone(status: StewardshipStatus): 'ok' | 'warn' | 'error' | 'info' {
+  if (status === 'Healthy') return 'ok'
+  if (status === 'Critical') return 'error'
+  if (status === 'License Review') return 'info'
+  return 'warn'
+}
+
+function stewardshipKindLabel(kind: StewardshipKind) {
+  return kind === 'service' ? 'Service' : 'Application'
+}
+
+function stewardshipDetailTitle(kind: StewardshipKind) {
+  return kind === 'service' ? 'Service Stewardship' : 'Application Stewardship'
+}
+
+const STEWARDSHIP_TYPE_SUMMARY = {
+  services: '5 monitored · 3 need attention',
+  applications: '5 tracked · 2 stale · 1 license review',
+}
+
+// Summary cards throughout the Experience Lab should eventually behave as
+// investigation filters, not passive metrics. Implemented here first.
+//
+// Experience Lab workflow (Services & Applications prototype):
+// Summary Card → Filter → Selection → Stuart Briefing → More Details... →
+// Investigation Workspace → Operator Action
+// This pattern will later apply to Operations, Audit, Organizations, Network,
+// Asset Explorer, and Projects.
+type StewardshipFilterId =
+  | 'services'
+  | 'applications'
+  | 'healthy'
+  | 'require-attention'
+  | 'critical'
+  | 'outdated'
+  | 'licenses-expiring'
+
+const STEWARDSHIP_FILTER_LABELS: Record<StewardshipFilterId, string> = {
+  services: 'Services',
+  applications: 'Applications',
+  healthy: 'Healthy',
+  'require-attention': 'Require Attention',
+  critical: 'Critical',
+  outdated: 'Outdated',
+  'licenses-expiring': 'Licenses Expiring',
+}
+
+function matchesStewardshipFilter(item: StewardshipItem, filter: StewardshipFilterId): boolean {
+  switch (filter) {
+    case 'services':
+      return item.kind === 'service'
+    case 'applications':
+      return item.kind === 'application'
+    case 'healthy':
+      return item.stewardshipStatus === 'Healthy'
+    case 'require-attention':
+      return item.stewardshipStatus === 'Attention'
+    case 'critical':
+      return item.criticality === 'Critical'
+    case 'outdated':
+      return item.stewardshipStatus === 'Stale' || item.versionStatus === 'Behind'
+    case 'licenses-expiring':
+      return item.stewardshipStatus === 'License Review'
+  }
+}
+
+function filterStewardshipItems(
+  items: StewardshipItem[],
+  filter: StewardshipFilterId | null,
+): StewardshipItem[] {
+  if (!filter) return items
+  return items.filter((item) => matchesStewardshipFilter(item, filter))
+}
+
+type StewardshipSummaryCardProps = {
+  filterId: StewardshipFilterId
+  label: string
+  active: boolean
+  onSelect: (filterId: StewardshipFilterId) => void
+  children: ReactNode
+}
+
+function StewardshipSummaryCard({
+  filterId,
+  label,
+  active,
+  onSelect,
+  children,
+}: StewardshipSummaryCardProps) {
+  return (
+    <button
+      type="button"
+      className={`audit-summary-card stewardship-summary-card${active ? ' active' : ''}`}
+      aria-pressed={active}
+      onClick={() => onSelect(filterId)}
+    >
+      <div className="audit-summary-label">{label}</div>
+      {children}
+    </button>
+  )
+}
+
+type StewardshipRelatedItem = {
+  label: string
+  category: 'Asset' | 'Audit History' | 'Organization' | 'Project'
+}
+
+function buildStewardshipRelatedSystems(item: StewardshipItem): StewardshipRelatedItem[] {
+  const assets = item.relatedAssets.map((label) => ({ label, category: 'Asset' as const }))
+  return [
+    ...assets,
+    {
+      label: 'Signal Lab Systems',
+      category: 'Organization',
+    },
+    {
+      label: `${item.name} · last stewardship review`,
+      category: 'Audit History',
+    },
+    {
+      label: `${item.name} remediation`,
+      category: 'Project',
+    },
+  ]
+}
+
+const STEWARDSHIP_RELATED_SYSTEM_GROUPS: {
+  category: StewardshipRelatedItem['category']
+  title: string
+}[] = [
+  { category: 'Asset', title: 'Assets' },
+  { category: 'Organization', title: 'Organizations' },
+  { category: 'Audit History', title: 'Audit History' },
+  { category: 'Project', title: 'Projects' },
+]
+
+function buildStewardshipExecutiveSummary(item: StewardshipItem): string {
+  const isOperational =
+    item.runningState.toLowerCase().includes('running') ||
+    item.runningState.toLowerCase().includes('active') ||
+    item.runningState.toLowerCase().includes('installed')
+
+  if (item.stewardshipStatus === 'Healthy') {
+    return `${item.name} is operating within Stuart's stewardship expectations. ${item.observation}`
+  }
+
+  if (isOperational) {
+    return `${item.name} is functioning, but Stuart has identified a stewardship concern. ${item.reason}`
+  }
+
+  return `${item.name} requires operator review. ${item.observation}`
+}
+
+function parseStewardshipConfidencePercent(confidence: string): number {
+  const match = confidence.match(/(\d+)/)
+  return match ? Number(match[1]) : 0
+}
+
+function stewardshipConfidenceLevel(percent: number): string {
+  if (percent >= 90) return 'High Confidence'
+  if (percent >= 75) return 'Moderate Confidence'
+  return 'Low Confidence'
+}
+
+function buildStewardshipBusinessImpact(item: StewardshipItem): string {
+  const ownerLabel = item.kind === 'service' ? 'Technical owner' : 'Business owner'
+  return `${ownerLabel} ${item.businessOwner} and supporting systems such as ${item.protectsSupports.join(', ')} may be affected while this remains unresolved. Stuart rates overall criticality as ${item.criticality}.`
+}
+
+function buildStewardshipEvidence(item: StewardshipItem): string[] {
+  const evidence = [
+    item.stalenessDetail,
+    `Last successful check: ${item.lastSuccessfulCheck}`,
+    `Running state: ${item.runningState}`,
+  ]
+  if (item.lastFailure && !item.lastFailure.startsWith('None')) {
+    evidence.push(`Last failure: ${item.lastFailure}`)
+  }
+  return evidence
+}
+
+function buildStewardshipRecommendedActions(item: StewardshipItem): string[] {
+  const actions = [item.recommendedAction]
+  for (const recommendation of item.relatedRecommendations) {
+    if (!actions.includes(recommendation)) {
+      actions.push(recommendation)
+    }
+  }
+  return actions
+}
+
+type StuartBriefingPanelProps = {
+  item: StewardshipItem
+  onClose: () => void
+}
+
+function StuartBriefingPanel({ item, onClose }: StuartBriefingPanelProps) {
+  const relatedSystems = buildStewardshipRelatedSystems(item)
+  const evidence = buildStewardshipEvidence(item)
+  const recommendedActions = buildStewardshipRecommendedActions(item)
+  const confidencePercent = parseStewardshipConfidencePercent(item.confidence)
+  const confidenceLevel = stewardshipConfidenceLevel(confidencePercent)
 
   return (
-    <div className="services-page">
-      <div className="page-intro">
-        <h2>Stuart inventory</h2>
-        <p>{PAGE_META.services.description}</p>
+    <>
+      <button
+        type="button"
+        className="audit-drawer-overlay"
+        aria-label="Close Stuart briefing"
+        onClick={onClose}
+      />
+      <aside className="audit-drawer briefing-drawer" aria-label="Stuart Briefing">
+        <div className="audit-drawer-header">
+          <div>
+            <div className="audit-drawer-eyebrow">Stuart Briefing</div>
+            <div className="audit-drawer-title">{item.name}</div>
+          </div>
+          <button
+            type="button"
+            className="audit-drawer-close"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="audit-drawer-body">
+          <section className="audit-drawer-section briefing-lead-section">
+            <h3 className="audit-drawer-section-title">Executive Summary</h3>
+            <p className="briefing-section-text briefing-executive-summary">
+              {buildStewardshipExecutiveSummary(item)}
+            </p>
+          </section>
+
+          <section className="audit-drawer-section">
+            <h3 className="audit-drawer-section-title">Observation</h3>
+            <p className="briefing-section-text">{item.observation}</p>
+          </section>
+
+          <section className="audit-drawer-section">
+            <h3 className="audit-drawer-section-title">Why Stuart Believes This</h3>
+            <p className="briefing-section-text">{item.reason}</p>
+          </section>
+
+          <section className="audit-drawer-section">
+            <h3 className="audit-drawer-section-title">Confidence</h3>
+            <div className="briefing-confidence">
+              <span className="briefing-confidence-level">{confidenceLevel}</span>
+              <span className="audit-confidence">{item.confidence}</span>
+            </div>
+          </section>
+
+          <section className="audit-drawer-section">
+            <h3 className="audit-drawer-section-title">Business Impact</h3>
+            <p className="briefing-section-text">{buildStewardshipBusinessImpact(item)}</p>
+          </section>
+
+          <section className="audit-drawer-section">
+            <h3 className="audit-drawer-section-title">Recommended Actions</h3>
+            <ul className="briefing-action-checklist">
+              {recommendedActions.map((action) => (
+                <li key={action} className="briefing-action-item">
+                  <span className="briefing-action-box" aria-hidden="true">
+                    ☐
+                  </span>
+                  <span>{action}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="audit-drawer-section">
+            <h3 className="audit-drawer-section-title">Related Systems</h3>
+            {STEWARDSHIP_RELATED_SYSTEM_GROUPS.map((group) => {
+              const items = relatedSystems.filter((related) => related.category === group.category)
+              if (items.length === 0) return null
+              return (
+                <div key={group.category} className="briefing-related-group">
+                  <div className="briefing-related-group-title">{group.title}</div>
+                  <ul className="briefing-related-list">
+                    {items.map((related) => (
+                      <li key={`${related.category}-${related.label}`}>
+                        <button type="button" className="briefing-related-link">
+                          {related.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })}
+          </section>
+
+          <details className="briefing-technical-details">
+            <summary className="briefing-technical-details-summary">Technical Details</summary>
+            <div className="briefing-technical-details-body">
+              <div className="briefing-technical-block">
+                <div className="briefing-technical-label">Evidence</div>
+                <ul className="audit-drawer-list">
+                  {evidence.map((entry) => (
+                    <li key={entry}>{entry}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="briefing-technical-block">
+                <div className="briefing-technical-label">Provider Observations</div>
+                <p className="briefing-section-text">{item.observation}</p>
+              </div>
+              <div className="briefing-technical-block">
+                <div className="briefing-technical-label">Dependencies</div>
+                <p className="briefing-section-text">
+                  {item.dependsOn.length > 0 ? item.dependsOn.join(', ') : 'None recorded'}
+                </p>
+              </div>
+              <div className="briefing-technical-block">
+                <div className="briefing-technical-label">Timeline References</div>
+                <ul className="audit-drawer-list">
+                  <li>Last updated: {item.lastUpdated}</li>
+                  <li>Last successful check: {item.lastSuccessfulCheck}</li>
+                  <li>Last failure: {item.lastFailure}</li>
+                </ul>
+              </div>
+              <div className="briefing-technical-block">
+                <div className="briefing-technical-label">Error IDs</div>
+                <p className="briefing-section-text briefing-mono">STW-{item.id.toUpperCase()}</p>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div className="briefing-drawer-footer">
+          <button type="button" className="settings-action-btn primary">
+            Accept Recommendation
+          </button>
+          <button type="button" className="settings-action-btn">
+            Create Project
+          </button>
+          <button type="button" className="settings-action-btn">
+            Dismiss
+          </button>
+          <button type="button" className="settings-action-btn briefing-more-details-btn" disabled>
+            More Details...
+          </button>
+        </div>
+      </aside>
+    </>
+  )
+}
+
+function ServicesApplicationsPage() {
+  const [selectedId, setSelectedId] = useState<string | null>(STEWARDSHIP_ITEMS[0].id)
+  const [activeFilter, setActiveFilter] = useState<StewardshipFilterId | null>(null)
+  const [briefingOpen, setBriefingOpen] = useState(false)
+
+  const filteredItems = useMemo(
+    () => filterStewardshipItems(STEWARDSHIP_ITEMS, activeFilter),
+    [activeFilter],
+  )
+  const filteredServices = useMemo(
+    () => filteredItems.filter((item) => item.kind === 'service'),
+    [filteredItems],
+  )
+  const filteredApplications = useMemo(
+    () => filteredItems.filter((item) => item.kind === 'application'),
+    [filteredItems],
+  )
+
+  const selected =
+    selectedId !== null
+      ? (STEWARDSHIP_ITEMS.find((item) => item.id === selectedId) ?? null)
+      : null
+
+  const selectFilter = useCallback((filter: StewardshipFilterId) => {
+    const nextFiltered = filterStewardshipItems(STEWARDSHIP_ITEMS, filter)
+    setActiveFilter(filter)
+    setSelectedId((current) => {
+      if (current && nextFiltered.some((item) => item.id === current)) return current
+      return nextFiltered[0]?.id ?? null
+    })
+  }, [])
+
+  const clearFilter = useCallback(() => {
+    setActiveFilter(null)
+  }, [])
+
+  const closeBriefing = useCallback(() => {
+    setBriefingOpen(false)
+  }, [])
+
+  useEffect(() => {
+    if (!selected) {
+      setBriefingOpen(false)
+    }
+  }, [selected])
+
+  const renderNavItem = (item: StewardshipItem) => (
+    <button
+      key={item.id}
+      type="button"
+      className={`settings-nav-item org-nav-item${item.id === selectedId ? ' active' : ''}`}
+      onClick={() => setSelectedId(item.id)}
+    >
+      <span className="org-nav-item-name">{item.name}</span>
+      <span className="org-nav-item-meta">
+        {stewardshipKindLabel(item.kind)} · {item.healthLabel}
+      </span>
+    </button>
+  )
+
+  const showGroupDescriptions = activeFilter === null
+  const showServicesGroup = filteredServices.length > 0
+  const showApplicationsGroup = filteredApplications.length > 0
+
+  return (
+    <div className="settings-shell stewardship-shell">
+      <aside className="settings-nav" aria-label="Services and applications">
+        <div className="settings-nav-header">
+          <h2>Services & Applications</h2>
+          <p>{PAGE_META.services.description}</p>
+        </div>
+        {activeFilter ? (
+          <div className="stewardship-filter-bar">
+            <span className="stewardship-filter-label">
+              Filtered by: {STEWARDSHIP_FILTER_LABELS[activeFilter]}
+            </span>
+            <button type="button" className="stewardship-filter-clear" onClick={clearFilter}>
+              Clear filter
+            </button>
+          </div>
+        ) : null}
+        <nav className="settings-nav-list stewardship-nav-list">
+          {filteredItems.length === 0 ? (
+            <p className="stewardship-nav-empty">No matching services or applications.</p>
+          ) : (
+            <>
+              {showServicesGroup ? (
+                <div className="stewardship-nav-group">
+                  <div className="stewardship-nav-group-label">Services</div>
+                  {showGroupDescriptions ? (
+                    <p className="stewardship-nav-group-desc">
+                      Infrastructure and background systems
+                    </p>
+                  ) : null}
+                  {filteredServices.map(renderNavItem)}
+                </div>
+              ) : null}
+              {showServicesGroup && showApplicationsGroup ? (
+                <div className="stewardship-nav-divider" role="separator" aria-hidden="true" />
+              ) : null}
+              {showApplicationsGroup ? (
+                <div className="stewardship-nav-group">
+                  <div className="stewardship-nav-group-label">Applications</div>
+                  {showGroupDescriptions ? (
+                    <p className="stewardship-nav-group-desc">
+                      Human-used software and business tools
+                    </p>
+                  ) : null}
+                  {filteredApplications.map(renderNavItem)}
+                </div>
+              ) : null}
+            </>
+          )}
+        </nav>
+      </aside>
+
+      <div className="settings-content">
+        <div className="settings-page-content">
+          <div className="settings-content-header stewardship-content-header">
+            {selected ? (
+              <>
+                <div>
+                  <p className="stewardship-prototype-label">Prototype view · mock stewardship data</p>
+                  <div className="stewardship-detail-eyebrow">
+                    {stewardshipDetailTitle(selected.kind)}
+                  </div>
+                  <h2>{selected.name}</h2>
+                  <p>
+                    {stewardshipKindLabel(selected.kind)} · {selected.vendor} · {selected.criticality}
+                  </p>
+                </div>
+                <div className="stewardship-header-actions">
+                  <button
+                    type="button"
+                    className="settings-action-btn primary"
+                    onClick={() => setBriefingOpen(true)}
+                  >
+                    Brief Me
+                  </button>
+                  <StatusBadge
+                    label={selected.stewardshipStatus}
+                    tone={stewardshipStatusTone(selected.stewardshipStatus)}
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                <p className="stewardship-prototype-label">Prototype view · mock stewardship data</p>
+                <h2>No selection</h2>
+                <p>No matching services or applications.</p>
+              </div>
+            )}
+          </div>
+
+          <div className="stewardship-type-summary-grid" aria-label="Category summary">
+            <StewardshipSummaryCard
+              filterId="services"
+              label="Services"
+              active={activeFilter === 'services'}
+              onSelect={selectFilter}
+            >
+              <div className="stewardship-type-summary-value">{STEWARDSHIP_TYPE_SUMMARY.services}</div>
+            </StewardshipSummaryCard>
+            <StewardshipSummaryCard
+              filterId="applications"
+              label="Applications"
+              active={activeFilter === 'applications'}
+              onSelect={selectFilter}
+            >
+              <div className="stewardship-type-summary-value">
+                {STEWARDSHIP_TYPE_SUMMARY.applications}
+              </div>
+            </StewardshipSummaryCard>
+          </div>
+
+          <div className="audit-summary-grid stewardship-summary-grid" aria-label="Stewardship summary">
+            <StewardshipSummaryCard
+              filterId="healthy"
+              label="Healthy"
+              active={activeFilter === 'healthy'}
+              onSelect={selectFilter}
+            >
+              <div className="audit-summary-value tone-information">{STEWARDSHIP_SUMMARY.healthy}</div>
+            </StewardshipSummaryCard>
+            <StewardshipSummaryCard
+              filterId="require-attention"
+              label="Require Attention"
+              active={activeFilter === 'require-attention'}
+              onSelect={selectFilter}
+            >
+              <div className="audit-summary-value tone-warning">
+                {STEWARDSHIP_SUMMARY.requireAttention}
+              </div>
+            </StewardshipSummaryCard>
+            <StewardshipSummaryCard
+              filterId="critical"
+              label="Critical"
+              active={activeFilter === 'critical'}
+              onSelect={selectFilter}
+            >
+              <div className="audit-summary-value tone-critical">{STEWARDSHIP_SUMMARY.critical}</div>
+            </StewardshipSummaryCard>
+            <StewardshipSummaryCard
+              filterId="outdated"
+              label="Outdated"
+              active={activeFilter === 'outdated'}
+              onSelect={selectFilter}
+            >
+              <div className="audit-summary-value">{STEWARDSHIP_SUMMARY.outdated}</div>
+            </StewardshipSummaryCard>
+            <StewardshipSummaryCard
+              filterId="licenses-expiring"
+              label="Licenses Expiring"
+              active={activeFilter === 'licenses-expiring'}
+              onSelect={selectFilter}
+            >
+              <div className="audit-summary-value tone-warning">
+                {STEWARDSHIP_SUMMARY.licensesExpiring}
+              </div>
+            </StewardshipSummaryCard>
+          </div>
+
+          {selected ? (
+          <div className="settings-sections">
+            <SettingsSectionCard title="Overview" className="span-full">
+              <div className="detail-grid">
+                <OrgDetailRow label="Type" value={stewardshipKindLabel(selected.kind)} />
+                <OrgDetailRow label="Vendor" value={selected.vendor} />
+                <OrgDetailRow label="Criticality" value={selected.criticality} />
+                <OrgDetailRow label="Stewardship Status" value={selected.stewardshipStatus} />
+                <OrgDetailRow label="Installed On" value={selected.installedOn} />
+                <OrgDetailRow
+                  label={selected.kind === 'service' ? 'Technical Owner' : 'Business Owner'}
+                  value={selected.businessOwner}
+                />
+              </div>
+            </SettingsSectionCard>
+
+            <SettingsSectionCard title="Version & Staleness">
+              <div className="detail-grid">
+                <OrgDetailRow label="Current Version" value={selected.currentVersion} />
+                <OrgDetailRow label="Latest Known Version" value={selected.latestKnownVersion} />
+                <OrgDetailRow label="Version Status" value={selected.versionStatus} />
+                <OrgDetailRow label="Last Updated" value={selected.lastUpdated} />
+                <OrgDetailRow label="Staleness Type" value={selected.stalenessType} />
+                <OrgDetailRow label="Staleness Detail" value={selected.stalenessDetail} />
+              </div>
+            </SettingsSectionCard>
+
+            <SettingsSectionCard title="Operational Health">
+              <div className="detail-grid">
+                <OrgDetailRow label="Running State" value={selected.runningState} />
+                <OrgDetailRow label="Last Successful Check" value={selected.lastSuccessfulCheck} />
+                <OrgDetailRow label="Last Failure" value={selected.lastFailure} />
+                <OrgDetailRow label="Confidence" value={selected.confidence} />
+              </div>
+            </SettingsSectionCard>
+
+            <SettingsSectionCard title="Licensing">
+              <div className="detail-grid">
+                <OrgDetailRow label="License Status" value={selected.licenseStatus} />
+                <OrgDetailRow label="Renewal Date" value={selected.renewalDate} />
+                <OrgDetailRow label="Monthly Cost" value={selected.monthlyCost} />
+                <OrgDetailRow label="Seats Used" value={selected.seatsUsed} />
+              </div>
+            </SettingsSectionCard>
+
+            <SettingsSectionCard title="Relationships" className="span-full">
+              <div className="detail-grid">
+                <OrgDetailRow label="Depends On" value={selected.dependsOn.join(', ') || 'None'} />
+                <OrgDetailRow
+                  label="Protects / Supports"
+                  value={selected.protectsSupports.join(', ')}
+                />
+                <OrgDetailRow label="Related Assets" value={selected.relatedAssets.join(', ')} />
+                <OrgDetailRow
+                  label="Related Recommendations"
+                  value={selected.relatedRecommendations.join(', ') || 'None'}
+                />
+              </div>
+            </SettingsSectionCard>
+
+            <SettingsSectionCard title="Stuart Recommendation" className="span-full">
+              <div className="detail-grid">
+                <OrgDetailRow label="Observation" value={selected.observation} />
+                <OrgDetailRow label="Reason" value={selected.reason} />
+                <OrgDetailRow label="Recommended Action" value={selected.recommendedAction} />
+                <OrgDetailRow label="Priority" value={selected.priority} />
+              </div>
+            </SettingsSectionCard>
+          </div>
+          ) : (
+            <div className="stewardship-detail-empty">
+              <p>No matching services or applications.</p>
+              {activeFilter ? (
+                <button type="button" className="stewardship-filter-clear" onClick={clearFilter}>
+                  Clear filter
+                </button>
+              ) : null}
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="panel">
-        <div className="panel-header">
-          <div>
-            <div className="panel-title">Stuart Services</div>
-            <div className="panel-subtitle">Internal engines that power observation, learning, and response</div>
-          </div>
-          <StatusBadge
-            label={attentionServices > 0 ? `${attentionServices} need attention` : 'All healthy'}
-            tone={attentionServices > 0 ? 'warn' : 'ok'}
-          />
-        </div>
-        <div className="service-list">
-          {STUART_SERVICES.map((service) => (
-            <ServiceRow key={service.name} {...service} />
-          ))}
-        </div>
-      </div>
-
-      <div className="panel">
-        <div className="panel-header">
-          <div>
-            <div className="panel-title">Connected Applications</div>
-            <div className="panel-subtitle">External systems Stuart connects to and relies on</div>
-          </div>
-          <StatusBadge
-            label={attentionProviders > 0 ? `${attentionProviders} need attention` : `${STUART_PROVIDERS.length} connected`}
-            tone={attentionProviders > 0 ? 'warn' : 'ok'}
-          />
-        </div>
-        <div className="application-list">
-          {STUART_PROVIDERS.map((provider) => (
-            <ApplicationRow key={provider.name} {...provider} />
-          ))}
-        </div>
-      </div>
+      {briefingOpen && selected ? (
+        <StuartBriefingPanel item={selected} onClose={closeBriefing} />
+      ) : null}
     </div>
   )
 }
