@@ -7,10 +7,11 @@ import {
 } from './app/version'
 import './App.css'
 
-type PageId = 'operations' | 'network' | 'services' | 'assets' | 'audit' | 'settings'
+type PageId = 'operations' | 'organizations' | 'network' | 'services' | 'assets' | 'audit' | 'settings'
 
 const NAV_ITEMS: { id: PageId; label: string }[] = [
   { id: 'operations', label: 'Operations Console' },
+  { id: 'organizations', label: 'Organizations' },
   { id: 'network', label: 'Network Console' },
   { id: 'services', label: 'Services & Applications' },
   { id: 'assets', label: 'Asset Explorer' },
@@ -22,6 +23,10 @@ const PAGE_META: Record<PageId, { title: string; description: string }> = {
   operations: {
     title: 'Operations Console',
     description: 'How Master Stuart is running — live resources, connected systems overview, and active work.',
+  },
+  organizations: {
+    title: 'Organizations',
+    description: 'Manage Stuart environments, contacts, subscriptions, and relationship context.',
   },
   network: {
     title: 'Network Console',
@@ -1559,6 +1564,459 @@ function AssetExplorer() {
               <div className="detail-value">{selected.detail}</div>
             </div>
           </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+type OrganizationStatus = 'Active' | 'Pilot' | 'Prospect'
+
+type Organization = {
+  id: string
+  name: string
+  type: string
+  status: OrganizationStatus
+  primaryContact: string
+  stuartCore: string
+  renewal: string
+  relationshipHealth: number
+  lastCheckIn: string
+  contacts: {
+    primary: string
+    technical: string
+    billing: string
+    emergency: string
+  }
+  subscription: {
+    plan: string
+    billingStatus: string
+    anniversaryDate: string
+    renewalDate: string
+    monthlyFee: string
+  }
+  infrastructure: {
+    stuartCoreVersion: string
+    assets: string
+    networks: string
+    providers: string
+    lastObservation: string
+  }
+  support: {
+    openAlerts: string
+    openRecommendations: string
+    lastOperatorReview: string
+    notes: string
+  }
+}
+
+/*
+ * Organizations are the Master Stuart business object.
+ * Each organization may have zero, one, or many Stuart Core environments.
+ * The Environment Selector chooses the active Stuart Core context.
+ * This workspace manages the business relationship around those environments.
+ */
+const ORGANIZATIONS: Organization[] = [
+  {
+    id: 'signal-lab',
+    name: 'Signal Lab',
+    type: 'Internal Lab',
+    status: 'Active',
+    primaryContact: 'Michael',
+    stuartCore: MOCK_CORE_VERSION_PLACEHOLDER,
+    renewal: 'Not applicable',
+    relationshipHealth: 100,
+    lastCheckIn: '2 minutes ago',
+    contacts: {
+      primary: 'Michael',
+      technical: 'Michael',
+      billing: 'Michael',
+      emergency: 'Michael',
+    },
+    subscription: {
+      plan: 'Internal',
+      billingStatus: 'Not billed',
+      anniversaryDate: '2024-01-15',
+      renewalDate: 'Not applicable',
+      monthlyFee: '$0',
+    },
+    infrastructure: {
+      stuartCoreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+      assets: '142 observed',
+      networks: '3 managed',
+      providers: '9 configured',
+      lastObservation: '30 seconds ago',
+    },
+    support: {
+      openAlerts: '0',
+      openRecommendations: '1',
+      lastOperatorReview: 'Today · 07:10',
+      notes: 'Primary development and validation environment for Master Stuart.',
+    },
+  },
+  {
+    id: 'oppure',
+    name: 'Oppure',
+    type: 'Business',
+    status: 'Active',
+    primaryContact: 'Michael',
+    stuartCore: MOCK_CORE_VERSION_PLACEHOLDER,
+    renewal: 'Pending',
+    relationshipHealth: 92,
+    lastCheckIn: '8 minutes ago',
+    contacts: {
+      primary: 'Michael',
+      technical: 'Michael',
+      billing: 'Michael',
+      emergency: 'Michael',
+    },
+    subscription: {
+      plan: 'Business Steward',
+      billingStatus: 'Current',
+      anniversaryDate: '2025-03-01',
+      renewalDate: 'Pending review',
+      monthlyFee: '$149',
+    },
+    infrastructure: {
+      stuartCoreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+      assets: '68 observed',
+      networks: '2 managed',
+      providers: '7 configured',
+      lastObservation: '4 minutes ago',
+    },
+    support: {
+      openAlerts: '1',
+      openRecommendations: '2',
+      lastOperatorReview: 'Yesterday · 16:40',
+      notes: 'Renewal discussion scheduled for next quarter.',
+    },
+  },
+  {
+    id: 'maine',
+    name: 'Maine',
+    type: 'Personal Site',
+    status: 'Active',
+    primaryContact: 'Michael',
+    stuartCore: MOCK_CORE_VERSION_PLACEHOLDER,
+    renewal: 'Not applicable',
+    relationshipHealth: 98,
+    lastCheckIn: '5 minutes ago',
+    contacts: {
+      primary: 'Michael',
+      technical: 'Michael',
+      billing: 'Michael',
+      emergency: 'Michael',
+    },
+    subscription: {
+      plan: 'Personal Steward',
+      billingStatus: 'Complimentary',
+      anniversaryDate: '2025-06-01',
+      renewalDate: 'Not applicable',
+      monthlyFee: '$0',
+    },
+    infrastructure: {
+      stuartCoreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+      assets: '34 observed',
+      networks: '1 managed',
+      providers: '5 configured',
+      lastObservation: '2 minutes ago',
+    },
+    support: {
+      openAlerts: '0',
+      openRecommendations: '0',
+      lastOperatorReview: 'Mon 02 Jun · 09:15',
+      notes: 'Low-touch personal environment with stable provider coverage.',
+    },
+  },
+  {
+    id: 'john',
+    name: 'John',
+    type: 'Pilot Operator',
+    status: 'Pilot',
+    primaryContact: 'John',
+    stuartCore: 'Not installed',
+    renewal: 'Not applicable',
+    relationshipHealth: 85,
+    lastCheckIn: '3 days ago',
+    contacts: {
+      primary: 'John',
+      technical: 'John',
+      billing: 'Michael',
+      emergency: 'John',
+    },
+    subscription: {
+      plan: 'Pilot',
+      billingStatus: 'Evaluation',
+      anniversaryDate: '2026-04-12',
+      renewalDate: 'Not applicable',
+      monthlyFee: '$0',
+    },
+    infrastructure: {
+      stuartCoreVersion: 'Not installed',
+      assets: 'Not observed',
+      networks: 'Not connected',
+      providers: 'Not configured',
+      lastObservation: 'No recent observation',
+    },
+    support: {
+      openAlerts: '0',
+      openRecommendations: '3',
+      lastOperatorReview: 'Fri 30 May · 14:20',
+      notes: 'Pilot onboarding in progress. Stuart Core installation pending.',
+    },
+  },
+  {
+    id: 'abc-manufacturing',
+    name: 'ABC Manufacturing',
+    type: 'Customer',
+    status: 'Prospect',
+    primaryContact: 'Jane Smith',
+    stuartCore: MOCK_CORE_VERSION_PLACEHOLDER,
+    renewal: '2027-06-08',
+    relationshipHealth: 72,
+    lastCheckIn: '1 hour ago',
+    contacts: {
+      primary: 'Jane Smith',
+      technical: 'David Chen',
+      billing: 'Accounts Payable',
+      emergency: 'Jane Smith',
+    },
+    subscription: {
+      plan: 'Enterprise Steward',
+      billingStatus: 'Proposal sent',
+      anniversaryDate: 'Not started',
+      renewalDate: '2027-06-08',
+      monthlyFee: '$499',
+    },
+    infrastructure: {
+      stuartCoreVersion: MOCK_CORE_VERSION_PLACEHOLDER,
+      assets: '210 observed',
+      networks: '4 managed',
+      providers: '11 configured',
+      lastObservation: '18 minutes ago',
+    },
+    support: {
+      openAlerts: '2',
+      openRecommendations: '4',
+      lastOperatorReview: 'Thu 05 Jun · 11:05',
+      notes: 'Prospect evaluation environment. Follow up on backup provider gaps.',
+    },
+  },
+]
+
+function organizationStatusTone(status: OrganizationStatus): 'ok' | 'warn' | 'info' {
+  if (status === 'Active') return 'ok'
+  if (status === 'Pilot') return 'info'
+  return 'warn'
+}
+
+function relationshipHealthTone(health: number): 'ok' | 'warn' | 'error' {
+  if (health >= 95) return 'ok'
+  if (health >= 80) return 'warn'
+  return 'error'
+}
+
+function OrganizationDetailSection({
+  title,
+  children,
+}: {
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <section className="org-detail-section">
+      <h3 className="org-detail-section-title">{title}</h3>
+      {children}
+    </section>
+  )
+}
+
+function OrganizationsPage() {
+  const [selectedId, setSelectedId] = useState(ORGANIZATIONS[0].id)
+  const selected = ORGANIZATIONS.find((org) => org.id === selectedId) ?? ORGANIZATIONS[0]
+  const healthTone = relationshipHealthTone(selected.relationshipHealth)
+
+  return (
+    <>
+      <div className="page-intro">
+        <h2>Organizations</h2>
+        <p>{PAGE_META.organizations.description}</p>
+      </div>
+
+      <div className="split-layout org-split-layout">
+        <div className="panel">
+          <div className="panel-header">
+            <div>
+              <div className="panel-title">Organization list</div>
+              <div className="panel-subtitle">Labs, businesses, pilots, and customers</div>
+            </div>
+            <StatusBadge label={`${ORGANIZATIONS.length} organizations`} tone="info" />
+          </div>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Organization</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Primary Contact</th>
+                <th>Stuart Core</th>
+                <th>Renewal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ORGANIZATIONS.map((org) => (
+                <tr
+                  key={org.id}
+                  className={`org-row${org.id === selectedId ? ' selected' : ''}`}
+                  onClick={() => setSelectedId(org.id)}
+                >
+                  <td>{org.name}</td>
+                  <td>{org.type}</td>
+                  <td>
+                    <StatusBadge label={org.status} tone={organizationStatusTone(org.status)} />
+                  </td>
+                  <td>{org.primaryContact}</td>
+                  <td>{org.stuartCore}</td>
+                  <td>{org.renewal}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="panel org-detail-panel">
+          <div className="panel-header">
+            <div>
+              <div className="panel-title">{selected.name}</div>
+              <div className="panel-subtitle">
+                {selected.type} · {selected.status}
+              </div>
+            </div>
+            <StatusBadge label={selected.status} tone={organizationStatusTone(selected.status)} />
+          </div>
+
+          <OrganizationDetailSection title="Overview">
+            <div className="detail-grid">
+              <div className="detail-row">
+                <div className="detail-label">Organization</div>
+                <div className="detail-value">{selected.name}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Type</div>
+                <div className="detail-value">{selected.type}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Status</div>
+                <div className="detail-value">{selected.status}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Relationship Health</div>
+                <div className={`detail-value org-health-value tone-${healthTone}`}>
+                  {selected.relationshipHealth}%
+                </div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Current Stuart Core</div>
+                <div className="detail-value">{selected.stuartCore}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Last Check-In</div>
+                <div className="detail-value">{selected.lastCheckIn}</div>
+              </div>
+            </div>
+          </OrganizationDetailSection>
+
+          <OrganizationDetailSection title="Contacts">
+            <div className="detail-grid">
+              <div className="detail-row">
+                <div className="detail-label">Primary Contact</div>
+                <div className="detail-value">{selected.contacts.primary}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Technical Contact</div>
+                <div className="detail-value">{selected.contacts.technical}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Billing Contact</div>
+                <div className="detail-value">{selected.contacts.billing}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Emergency Contact</div>
+                <div className="detail-value">{selected.contacts.emergency}</div>
+              </div>
+            </div>
+          </OrganizationDetailSection>
+
+          <OrganizationDetailSection title="Subscription">
+            <div className="detail-grid">
+              <div className="detail-row">
+                <div className="detail-label">Plan</div>
+                <div className="detail-value">{selected.subscription.plan}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Billing Status</div>
+                <div className="detail-value">{selected.subscription.billingStatus}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Anniversary Date</div>
+                <div className="detail-value">{selected.subscription.anniversaryDate}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Renewal Date</div>
+                <div className="detail-value">{selected.subscription.renewalDate}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Monthly Fee</div>
+                <div className="detail-value">{selected.subscription.monthlyFee}</div>
+              </div>
+            </div>
+          </OrganizationDetailSection>
+
+          <OrganizationDetailSection title="Infrastructure">
+            <div className="detail-grid">
+              <div className="detail-row">
+                <div className="detail-label">Stuart Core Version</div>
+                <div className="detail-value">{selected.infrastructure.stuartCoreVersion}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Assets</div>
+                <div className="detail-value">{selected.infrastructure.assets}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Networks</div>
+                <div className="detail-value">{selected.infrastructure.networks}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Providers</div>
+                <div className="detail-value">{selected.infrastructure.providers}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Last Observation</div>
+                <div className="detail-value">{selected.infrastructure.lastObservation}</div>
+              </div>
+            </div>
+          </OrganizationDetailSection>
+
+          <OrganizationDetailSection title="Support">
+            <div className="detail-grid">
+              <div className="detail-row">
+                <div className="detail-label">Open Alerts</div>
+                <div className="detail-value">{selected.support.openAlerts}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Open Recommendations</div>
+                <div className="detail-value">{selected.support.openRecommendations}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Last Operator Review</div>
+                <div className="detail-value">{selected.support.lastOperatorReview}</div>
+              </div>
+              <div className="detail-row">
+                <div className="detail-label">Notes</div>
+                <div className="detail-value">{selected.support.notes}</div>
+              </div>
+            </div>
+          </OrganizationDetailSection>
         </div>
       </div>
     </>
@@ -3125,6 +3583,8 @@ function PageContent({
   switch (page) {
     case 'operations':
       return <OperationsConsole />
+    case 'organizations':
+      return <OrganizationsPage />
     case 'network':
       return <NetworkConsole />
     case 'services':

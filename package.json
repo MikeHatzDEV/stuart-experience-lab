@@ -1,7 +1,7 @@
 {
   "name": "stuart-grafana-prototype",
   "private": true,
-  "version": "0.0.5-Alpha_v2",
+  "version": "0.0.6-Alpha_v2",
   "type": "module",
   "scripts": {
     "dev": "vite",

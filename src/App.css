@@ -1179,6 +1179,51 @@ button.panel-clickable {
   color: var(--text-heading);
 }
 
+/* Organizations */
+.org-split-layout {
+  align-items: start;
+}
+
+.org-row {
+  cursor: pointer;
+}
+
+.org-row.selected td {
+  background: var(--accent-soft);
+}
+
+.org-detail-panel {
+  max-height: calc(100vh - var(--header-height) - 120px);
+  overflow: auto;
+}
+
+.org-detail-section + .org-detail-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.org-detail-section-title {
+  margin: 0 0 10px;
+  color: var(--text-heading);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.org-health-value.tone-ok {
+  color: var(--status-ok);
+}
+
+.org-health-value.tone-warn {
+  color: var(--status-warn);
+}
+
+.org-health-value.tone-error {
+  color: var(--status-error);
+}
+
 /* Audit */
 .filter-bar {
   display: flex;
