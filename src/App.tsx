@@ -585,18 +585,29 @@ function formatClock(date: Date) {
   })
 }
 
-function formatHeaderDateTime(date: Date) {
-  const datePart = date.toLocaleDateString('en-GB', {
-    weekday: 'short',
-    day: '2-digit',
-    month: 'short',
-  })
-  const timePart = date.toLocaleTimeString('en-GB', {
+function formatHeaderClockTime(date: Date) {
+  return date.toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false,
+    second: '2-digit',
+    hour12: true,
   })
-  return `${datePart} · ${timePart}`
+}
+
+function formatHeaderClockDate(date: Date) {
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()
+  const day = date.getDate()
+  const month = date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()
+  return `${weekday} ${day} ${month}`
+}
+
+function HeaderClock({ now }: { now: Date }) {
+  return (
+    <div className="hide-mobile header-clock" aria-label="Current time">
+      <span className="header-clock-time">{formatHeaderClockTime(now)}</span>
+      <span className="header-clock-date">{formatHeaderClockDate(now)}</span>
+    </div>
+  )
 }
 
 function formatRelativeObservationAge(observedAt: Date, now: Date) {
@@ -3985,7 +3996,7 @@ function App() {
   const meta = PAGE_META[activePage]
 
   useEffect(() => {
-    const tick = window.setInterval(() => setHeaderClock(new Date()), 30_000)
+    const tick = window.setInterval(() => setHeaderClock(new Date()), 1000)
     return () => window.clearInterval(tick)
   }, [])
 
@@ -4014,21 +4025,21 @@ function App() {
       <div className="main-column">
         <header className="top-header">
           <div className="header-left">
-            <div>
-              <EnvironmentSelector
-                currentEnvironment={currentEnvironment}
-                availableEnvironments={MOCK_ENVIRONMENTS}
-                onEnvironmentChange={setCurrentEnvironment}
-              />
-              <div className="header-title">{meta.title}</div>
-            </div>
+            <EnvironmentSelector
+              currentEnvironment={currentEnvironment}
+              availableEnvironments={MOCK_ENVIRONMENTS}
+              onEnvironmentChange={setCurrentEnvironment}
+            />
+          </div>
+          <div className="header-center">
+            <div className="header-title">{meta.title}</div>
           </div>
           <div className="header-right">
             <div className="status-pill">
               <span className="status-dot" />
-              Runtime active
+              Core Connected
             </div>
-            <span className="hide-mobile header-clock">{formatHeaderDateTime(headerClock)}</span>
+            <HeaderClock now={headerClock} />
           </div>
         </header>
 
