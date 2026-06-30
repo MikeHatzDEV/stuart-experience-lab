@@ -13,6 +13,7 @@ import {
 } from './mockAuth'
 import {
   authService,
+  PRODUCTION_AUTH_UNAVAILABLE_MESSAGE,
   toSessionDisplay,
   type AuthStatus,
   type Session,
@@ -25,6 +26,7 @@ type AuthContextValue = {
   isAuthenticated: boolean
   currentUser: StuartUser
   session: SessionDisplay
+  authNotice: string | null
   signIn: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -47,11 +49,12 @@ function statusFromSession(session: Session | null): AuthStatus {
 
 /*
  * AuthContext → AuthService → AuthProvider → AuthHttpClient
- * See docs/authentication_foundation_v2.md §17 Phase 2.
+ * See docs/authentication_foundation_v2.md §18.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>('initializing')
   const [session, setSession] = useState<Session | null>(null)
+  const [authNotice, setAuthNotice] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -68,11 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signIn = useCallback(async () => {
+    setAuthNotice(null)
     const result = await authService.signIn({})
     if (result.success) {
       setSession(result.session)
       setStatus('authenticated')
       return
+    }
+
+    if (result.error.code === 'ServerUnavailable') {
+      setAuthNotice(result.error.message || PRODUCTION_AUTH_UNAVAILABLE_MESSAGE)
     }
 
     if (result.status === 'mfa_required') {
@@ -84,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const signOut = useCallback(async () => {
+    setAuthNotice(null)
     await authService.signOut()
     setSession(null)
     setStatus('unauthenticated')
@@ -95,10 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: status === 'authenticated',
       currentUser: session?.currentUser ?? FALLBACK_USER,
       session: session ? toSessionDisplay(session) : FALLBACK_SESSION_DISPLAY,
+      authNotice,
       signIn,
       signOut,
     }),
-    [status, session, signIn, signOut],
+    [status, session, authNotice, signIn, signOut],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

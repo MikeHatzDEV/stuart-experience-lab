@@ -6,7 +6,7 @@ import './LoginScreen.css'
 // TODO(auth-v2): Wire to POST /auth/login and POST /auth/mfa/verify.
 // See docs/authentication_foundation_v2.md — §6, §12.
 export function LoginScreen() {
-  const { signIn } = useAuth()
+  const { signIn, authNotice } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [step, setStep] = useState<'credentials' | 'mfa'>('credentials')
@@ -102,6 +102,12 @@ export function LoginScreen() {
             mock session for UI review.
           </p>
         </div>
+
+        {authNotice ? (
+          <div className="login-auth-notice" role="alert">
+            {authNotice}
+          </div>
+        ) : null}
       </div>
     </div>
   )

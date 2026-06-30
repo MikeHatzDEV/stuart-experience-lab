@@ -15,7 +15,6 @@ function createProvider(): AuthProvider {
   const kind = resolveAuthProviderKind()
 
   if (kind === 'production') {
-    // Reserved — returns unauthenticated until Phase 2 HTTP integration.
     return new ProductionAuthProvider()
   }
 

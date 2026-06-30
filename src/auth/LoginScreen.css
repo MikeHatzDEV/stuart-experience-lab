@@ -152,3 +152,16 @@
   line-height: 1.5;
   color: var(--text-muted, #9fa7b3);
 }
+
+.login-auth-notice {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(212, 168, 74, 0.35);
+  background: rgba(212, 168, 74, 0.08);
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(232, 200, 140, 0.95);
+  text-align: center;
+}

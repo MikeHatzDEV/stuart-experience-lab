@@ -1,5 +1,4 @@
-import { AUTH_ENDPOINTS } from './authEndpoints'
-import { authErrorFromResponse, mapHttpStatusToAuthError } from './authHttpErrors'
+import { mapHttpStatusToAuthError } from './authHttpErrors'
 import {
   createMockSessionRecord,
   MockAuthSessionStore,
@@ -71,7 +70,7 @@ function httpSuccess<T>(status: number, data: T): AuthHttpSuccess<T> {
 }
 
 function httpFailure(status: number, error?: AuthError): AuthHttpFailure {
-  return { ok: false, status, error: error ?? authErrorFromResponse(status) }
+  return { ok: false, status, error: error ?? mapHttpStatusToAuthError(status) }
 }
 
 /**
@@ -123,83 +122,7 @@ export class MockAuthHttpClient implements AuthHttpClient {
 
   async postPasswordReset(_body: { email: string }): Promise<AuthHttpResponse<PasswordResetHttpData>> {
     await delay(MOCK_AUTH_HTTP_DELAYS.passwordReset)
-    // Contract only — no email delivery in mock transport.
     return httpSuccess(202, { accepted: true })
-  }
-}
-
-/**
- * Production HTTP client — reserved for Stuart Auth API (not enabled).
- * Uses fetch + credentials: 'include'. Never stores tokens in browser storage.
- */
-export class FetchAuthHttpClient implements AuthHttpClient {
-  private async request<T>(
-    endpoint: string,
-    init?: RequestInit,
-  ): Promise<AuthHttpResponse<T>> {
-    try {
-      const response = await fetch(endpoint, {
-        ...init,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(init?.headers ?? {}),
-        },
-      })
-
-      if (!response.ok) {
-        let message: string | undefined
-        try {
-          const body = (await response.json()) as { message?: string }
-          message = body.message
-        } catch {
-          message = undefined
-        }
-        return httpFailure(response.status, authErrorFromResponse(response.status, { message }))
-      }
-
-      if (response.status === 204) {
-        return httpSuccess(204, null as T)
-      }
-
-      const data = (await response.json()) as T
-      return httpSuccess(response.status, data)
-    } catch {
-      return httpFailure(500, mapHttpStatusToAuthError(500))
-    }
-  }
-
-  getSession(): Promise<AuthHttpResponse<SessionHttpData>> {
-    return this.request<SessionHttpData>(AUTH_ENDPOINTS.session, { method: 'GET' })
-  }
-
-  postLogin(body: SignInRequest): Promise<AuthHttpResponse<LoginHttpData>> {
-    return this.request<LoginHttpData>(AUTH_ENDPOINTS.login, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-  }
-
-  postLogout(): Promise<AuthHttpResponse<null>> {
-    return this.request<null>(AUTH_ENDPOINTS.logout, { method: 'POST' })
-  }
-
-  postRefresh(): Promise<AuthHttpResponse<SessionHttpData>> {
-    return this.request<SessionHttpData>(AUTH_ENDPOINTS.refresh, { method: 'POST' })
-  }
-
-  postMfa(body: MfaVerifyRequest): Promise<AuthHttpResponse<MfaHttpData>> {
-    return this.request<MfaHttpData>(AUTH_ENDPOINTS.mfa, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
-  }
-
-  postPasswordReset(body: { email: string }): Promise<AuthHttpResponse<PasswordResetHttpData>> {
-    return this.request<PasswordResetHttpData>(AUTH_ENDPOINTS.passwordReset, {
-      method: 'POST',
-      body: JSON.stringify(body),
-    })
   }
 }
 
