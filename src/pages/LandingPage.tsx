@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { StuartOrb } from '../StuartOrb'
 import { EXPERIENCE_LAB_VERSION } from '../app/version'
 import './LandingPage.css'
@@ -8,8 +7,6 @@ type LandingPageProps = {
 }
 
 export function LandingPage({ onAccessStuart }: LandingPageProps) {
-  const [learnMoreOpen, setLearnMoreOpen] = useState(false)
-
   return (
     <div className="landing">
       <main className="landing-main">
@@ -32,43 +29,17 @@ export function LandingPage({ onAccessStuart }: LandingPageProps) {
             Act.
           </p>
           <p className="landing-description">
-            Stuart is an intelligent operations platform that helps organizations
-            observe their systems, understand what matters, and act with confidence.
+            Stuart is an intelligent operations platform that continuously observes your
+            environment, correlates information across systems, and helps operators
+            understand what requires their attention.
           </p>
         </section>
 
         <div className="landing-actions">
-          <button
-            type="button"
-            className="landing-btn landing-btn-secondary"
-            onClick={() => setLearnMoreOpen((open) => !open)}
-            aria-expanded={learnMoreOpen}
-            aria-controls="learn-more-panel"
-          >
-            Learn More
-          </button>
-          <button type="button" className="landing-btn landing-btn-primary" onClick={onAccessStuart}>
+          <button type="button" className="landing-btn" onClick={onAccessStuart}>
             Access Stuart
           </button>
         </div>
-
-        {learnMoreOpen && (
-          <aside
-            id="learn-more-panel"
-            className="landing-learn-more"
-            aria-label="About Stuart"
-          >
-            <p className="landing-learn-more-label">About Stuart</p>
-            <p>
-              Stuart brings continuous observation, contextual understanding, and
-              guided action into a single experience for modern operations teams.
-              This public site introduces Stuart and directs you into the platform.
-            </p>
-            <p className="landing-learn-more-note">
-              Full documentation and product details will be available in a future release.
-            </p>
-          </aside>
-        )}
       </main>
 
       <footer className="landing-footer">
@@ -86,9 +57,7 @@ export function LandingPage({ onAccessStuart }: LandingPageProps) {
             Contact
           </span>
         </nav>
-        <p className="landing-footer-meta">
-          © Signal Lab Systems · {EXPERIENCE_LAB_VERSION}
-        </p>
+        <p className="landing-footer-meta">{EXPERIENCE_LAB_VERSION}</p>
       </footer>
     </div>
   )

@@ -1,32 +1,45 @@
 # Website Integration — Domain Architecture
 
-Foundation v1 · Platform version `0.2.0-Alpha_v2`
+Foundation v2 · Platform version `0.2.1-Alpha_v2`
 
 ## One application
 
 `stuart-grafana-prototype` is the single React application for both the public website and the Stuart Experience Platform. The separate `signal-lab-systems-website` project was a temporary prototype only and is not maintained.
 
+## Public website structure
+
+| Route | Role |
+|-------|------|
+| `/` | **Public website** — landing page at `https://signallabsystems.com/` |
+| `/login` | **Authentication** — existing login screen (mock until central Stuart auth) |
+| `/app` | **Experience Platform** — full Stuart product shell (unchanged) |
+
 ## User journey
 
 ```
-www.signallabsystems.com
+https://signallabsystems.com/
         ↓
-   /  Landing Page
+   /  Public landing
+        ↓  [Access Stuart]
+   /login  Authentication
         ↓
-   /login  Login (mock authentication)
-        ↓
-   /app  Stuart Experience Platform
+   /app  Experience Platform
 ```
 
-When `VITE_AUTH_DEV_BOOTSTRAP` is enabled (development default), `/app` may load with an auto-established mock session. Otherwise the mock credentials → MFA → Access Stuart flow applies before entering `/app`.
+When `VITE_AUTH_DEV_BOOTSTRAP` is enabled (development default), `/app` may load with an auto-established mock session. Otherwise the existing mock credentials → MFA → Access Stuart flow applies before entering `/app`.
 
-## Route map
+## Landing page (v2)
 
-| Route | Purpose |
-|-------|---------|
-| `/` | Public landing — introduce Stuart, Access Stuart CTA |
-| `/login` | Authentication entry (no backend in v1) |
-| `/app` | Full Experience Platform (unchanged product shell) |
+The root URL is a minimal public front door:
+
+- Signal Lab Systems branding
+- Centered Stuart Orb
+- Mission: Observe · Understand · Act
+- Single CTA: **Access Stuart** → `/login`
+- Footer placeholders (Documentation, Downloads, Support, Contact) — disabled
+- Platform version from `package.json`
+
+No downloads, accounts, documentation content, or marketing sections.
 
 ## Future routes (not implemented)
 
