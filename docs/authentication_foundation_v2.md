@@ -1,10 +1,10 @@
 # Stuart Authentication Foundation v2
 
-**Status:** Phase 1 complete — auth service skeleton in Experience Lab  
+**Status:** Phase 2 complete — HTTP boundary foundation in Experience Lab  
 **Scope:** Experience Lab (`stuart-grafana-prototype`)  
 **Date:** June 2026  
 
-This document defines how Stuart moves from the current mock user system to real authentication. Phase 1 introduces a service abstraction layer; passwords, MFA verification, and Stuart Core connections are not implemented yet.
+This document defines how Stuart moves from the current mock user system to real authentication. Phase 2 adds the HTTP client boundary; passwords, MFA verification, and Stuart Core connections are not implemented yet.
 
 ---
 
@@ -382,7 +382,27 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 - User table, session table, password hash storage
 - Real `POST /auth/login`, cookie-based sessions
 
-### Phase 2 — Credential validation & session cookies
+### Phase 2 — HTTP boundary foundation (complete)
+
+**Experience Lab frontend:**
+
+- `authHttpClient.ts` — centralized HTTP client; mock transport with simulated latency
+- `authEndpoints.ts` — `/api/auth/*` endpoint contracts
+- `authHttpErrors.ts` — HTTP status → `AuthError` mapping (401, 403, 423, 500)
+- `mockAuthSessionStore.ts` — in-memory session store behind mock HTTP
+- `FetchAuthHttpClient` — production client reserved (`credentials: 'include'`); not enabled
+- Flow: `AuthService` → `MockAuthProvider` → `AuthHttpClient` → mock responses
+- Session bootstrap via `GET /api/auth/session` mock (~100ms); `AuthContext` starts `initializing`
+- Cookie strategy documented — no tokens in `localStorage`, `sessionStorage`, or URL
+
+**Not in Phase 2 (deferred to Phase 3+):**
+
+- Real password validation
+- HttpOnly cookie issuance from backend
+- MFA verification
+- `ProductionAuthProvider` / `FetchAuthHttpClient` activation
+
+### Phase 3 — Credential validation & session cookies
 
 - Real login validation with error states in `LoginScreen`
 - HttpOnly session cookies
@@ -390,28 +410,28 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 - Server-side audit log for sign-in / sign-out / expiry
 - Lockout after `failed_login_count` threshold
 
-### Phase 3 — MFA
+### Phase 4 — MFA
 
 - TOTP enrollment and verification
 - Backup codes
 - MFA challenge step wired to API (replace placeholder)
 - Require MFA for Owner/Admin
 
-### Phase 4 — User & role management UI
+### Phase 5 — User & role management UI
 
 - Invite users, disable users, role editing
 - `UsersSettings` backed by API
 - Password reset flow
 - Security settings read/write for Owner
 
-### Phase 5 — Organization permissions
+### Phase 6 — Organization permissions
 
 - Organization membership model
 - Environment selector filtered by membership
 - Per-org role overrides
 - Authorization middleware on all data routes
 
-### Phase 6 — Production preview hardening
+### Phase 7 — Production preview hardening
 
 - Disable mock data path when `VITE_PREVIEW_MODE=false`
 - Enable authorized Core proxy for authenticated operators only
@@ -463,8 +483,11 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 |------|---------|
 | `src/auth/mockAuth.ts` | Mock catalog data (users, roles, policy); not session state |
 | `src/services/auth/authService.ts` | Auth service singleton |
-| `src/services/auth/MockAuthProvider.ts` | Active provider (Phase 1) |
-| `src/services/auth/ProductionAuthProvider.ts` | Reserved provider (Phase 2+) |
+| `src/services/auth/authHttpClient.ts` | HTTP client (mock + reserved fetch) |
+| `src/services/auth/authEndpoints.ts` | Endpoint contracts |
+| `src/services/auth/authHttpErrors.ts` | HTTP → AuthError mapping |
+| `src/services/auth/mockAuthSessionStore.ts` | Mock session store |
+| `src/services/auth/MockAuthProvider.ts` | Active provider (routes through HTTP client) |
 | `src/auth/AuthContext.tsx` | React session state; consumes `authService` |
 | `src/auth/SessionGate.tsx` | Auth boundary |
 | `src/auth/LoginScreen.tsx` | Login + MFA UI shell |
@@ -558,6 +581,78 @@ Session {
 - Login, Header, Users, Security, Audit, Home UI
 - Sign In / Sign Out user flows
 - All stewardship data remains mock
+
+---
+
+## 17. Phase 2 Implementation — HTTP Boundary
+
+### 17.1 Architecture
+
+```
+┌────────────┐   ┌─────────────┐   ┌─────────────────┐   ┌──────────────────┐   ┌─────────────────────┐
+│ UI Layer   │──►│ AuthContext │──►│   AuthService   │──►│ MockAuthProvider │──►│   AuthHttpClient    │
+└────────────┘   └─────────────┘   └─────────────────┘   └──────────────────┘   │ MockAuthHttpClient ✓ │
+                                                                                  │ FetchAuthHttpClient  │
+                                                                                  │ (reserved)           │
+                                                                                  └──────────┬───────────┘
+                                                                                             │
+                                                                                             ▼
+                                                                                  MockAuthSessionStore
+```
+
+### 17.2 Endpoint contracts
+
+| Method | Endpoint | Mock delay | Purpose |
+|--------|----------|------------|---------|
+| `GET` | `/api/auth/session` | ~100ms | Bootstrap / read session |
+| `POST` | `/api/auth/login` | ~250ms | Sign in |
+| `POST` | `/api/auth/logout` | ~150ms | Sign out |
+| `POST` | `/api/auth/refresh` | ~120ms | Extend idle window |
+| `POST` | `/api/auth/mfa` | ~200ms | MFA verify (placeholder) |
+| `POST` | `/api/auth/password-reset` | ~180ms | Contract only |
+
+Base path override: `VITE_AUTH_API_URL`
+
+### 17.3 Session bootstrap flow
+
+```
+App mount
+  → AuthContext status: initializing
+  → SessionGate: existing loading state (null render)
+  → authService.initialize()
+  → MockAuthProvider.getCurrentSession()
+  → AuthHttpClient.getSession() [~100ms]
+  → MockAuthSessionStore (bootstrap session if dev flag set)
+  → AuthContext status: authenticated | unauthenticated
+  → SessionGate renders shell or LoginScreen
+```
+
+### 17.4 Cookie strategy (production target)
+
+```
+Browser ──(HttpOnly, Secure, SameSite cookie)──► Stuart Auth API ──► Session validation
+```
+
+**Forbidden in browser:** `localStorage`, `sessionStorage`, URL query tokens.
+
+`FetchAuthHttpClient` uses `credentials: 'include'` only. Not enabled in Phase 2.
+
+### 17.5 HTTP error mapping
+
+| HTTP status | AuthError |
+|-------------|-----------|
+| 401 | `InvalidCredentials` |
+| 403 | `MfaRequired` |
+| 419 / 440 | `SessionExpired` |
+| 423 | `AccountLocked` |
+| 500+ | `ServerUnavailable` |
+
+### 17.6 What unchanged in Phase 2
+
+- All UI screens and flows
+- No real passwords, MFA, Core, or Organizations
+- `ProductionAuthProvider` not enabled
+- `mockAuth.ts` remains catalog-only
 
 ---
 

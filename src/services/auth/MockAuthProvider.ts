@@ -1,8 +1,9 @@
-import {
-  MOCK_CURRENT_USER,
-  MOCK_PREVIEW_SESSION,
-} from '../../auth/mockAuth'
 import { isDevSessionBootstrapEnabled } from './authConfig'
+import { createAuthHttpClient, type AuthHttpClient } from './authHttpClient'
+import {
+  createMockSessionRecord,
+  MockAuthSessionStore,
+} from './mockAuthSessionStore'
 import type { AuthProvider } from './authProvider'
 import type {
   AuthStatus,
@@ -13,83 +14,57 @@ import type {
   SignInResult,
 } from './authTypes'
 
-const MOCK_SESSION_TTL_MS = 30 * 60 * 1000
-
-function createMockSession(): Session {
-  const now = Date.now()
-  const createdAt = new Date(now).toISOString()
-  const expiresAt = new Date(now + MOCK_SESSION_TTL_MS).toISOString()
-
-  return {
-    sessionId: `preview-${MOCK_CURRENT_USER.id}-${now}`,
-    authenticated: true,
-    currentUser: MOCK_CURRENT_USER,
-    createdAt,
-    expiresAt,
-    authenticationMethod: 'preview',
-    mfaVerified: MOCK_CURRENT_USER.mfaEnabled,
-    sessionType: MOCK_PREVIEW_SESSION.sessionType,
-    authenticatedAt: MOCK_PREVIEW_SESSION.authenticatedAt,
-    device: MOCK_PREVIEW_SESSION.device,
-    location: MOCK_PREVIEW_SESSION.location,
-    durationLabel: MOCK_PREVIEW_SESSION.durationLabel,
-  }
-}
-
 /**
- * Mock auth provider — returns catalog mock data through the service layer.
- * UI must not import mock session state directly.
+ * Mock auth provider — all operations route through AuthHttpClient mock transport.
+ * AuthService → MockAuthProvider → AuthHttpClient → MockAuthSessionStore
  */
 export class MockAuthProvider implements AuthProvider {
-  private session: Session | null
+  private readonly store: MockAuthSessionStore
+  private readonly httpClient: AuthHttpClient
 
-  constructor() {
-    this.session = isDevSessionBootstrapEnabled() ? createMockSession() : null
+  constructor(httpClient?: AuthHttpClient, store?: MockAuthSessionStore) {
+    const bootstrapSession = isDevSessionBootstrapEnabled() ? createMockSessionRecord() : null
+    this.store = store ?? new MockAuthSessionStore(bootstrapSession)
+    this.httpClient = httpClient ?? createAuthHttpClient(this.store)
   }
 
   getBootstrapState(): { status: AuthStatus; session: Session | null } {
-    if (this.session?.authenticated) {
-      return { status: 'authenticated', session: this.session }
-    }
-    return { status: 'unauthenticated', session: null }
+    return { status: 'initializing', session: null }
   }
 
   async getCurrentSession(): Promise<Session | null> {
-    return this.session
+    const response = await this.httpClient.getSession()
+    if (!response.ok) return null
+    return response.data.session
   }
 
-  async signIn(_request: SignInRequest): Promise<SignInResult> {
-    this.session = createMockSession()
-    return { success: true, session: this.session }
+  async signIn(request: SignInRequest): Promise<SignInResult> {
+    const response = await this.httpClient.postLogin(request)
+    if (!response.ok) {
+      const status = response.error.code === 'MfaRequired' ? 'mfa_required' : 'unauthenticated'
+      return { success: false, error: response.error, status }
+    }
+    return { success: true, session: response.data.session }
   }
 
   async signOut(): Promise<void> {
-    this.session = null
+    const response = await this.httpClient.postLogout()
+    if (!response.ok) {
+      throw new Error(response.error.message)
+    }
   }
 
   async refreshSession(): Promise<Session | null> {
-    if (!this.session) return null
-
-    const now = Date.now()
-    this.session = {
-      ...this.session,
-      expiresAt: new Date(now + MOCK_SESSION_TTL_MS).toISOString(),
-    }
-    return this.session
+    const response = await this.httpClient.postRefresh()
+    if (!response.ok) return null
+    return response.data.session
   }
 
-  async verifyMfa(_request: MfaVerifyRequest): Promise<MfaVerifyResult> {
-    if (!this.session) {
-      return {
-        success: false,
-        error: {
-          code: 'MfaRequired',
-          message: 'No active session awaiting MFA verification.',
-        },
-      }
+  async verifyMfa(request: MfaVerifyRequest): Promise<MfaVerifyResult> {
+    const response = await this.httpClient.postMfa(request)
+    if (!response.ok) {
+      return { success: false, error: response.error }
     }
-
-    this.session = { ...this.session, mfaVerified: true }
-    return { success: true, session: this.session }
+    return { success: true, session: response.data.session }
   }
 }

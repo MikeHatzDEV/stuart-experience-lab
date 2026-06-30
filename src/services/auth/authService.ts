@@ -24,7 +24,9 @@ function createProvider(): AuthProvider {
 
 /**
  * AuthService — single entry point for UI and AuthContext.
- * UI never talks to mockAuth.ts for session state.
+ *
+ * AuthService → AuthProvider → AuthHttpClient → mock/production transport
+ * UI never talks to mockAuth.ts for session state or fetch() directly.
  */
 export class AuthService {
   private readonly provider: AuthProvider

@@ -12,6 +12,7 @@ import { EnvironmentSelector, type Environment } from './EnvironmentSelector'
 import { StuartOrb } from './StuartOrb'
 import {
   DEFAULT_CORE_LABEL,
+  EXPERIENCE_LAB_VERSION,
   EXPERIENCE_LAB_VERSION_LABEL,
   MOCK_CORE_VERSION_PLACEHOLDER,
 } from './app/version'
@@ -3954,6 +3955,10 @@ function SettingsPage() {
           <ProvidersSettings />
         ) : activeSection === 'security' ? (
           <SecuritySettings />
+        ) : activeSection === 'diagnostics' ? (
+          <DiagnosticsSettings />
+        ) : activeSection === 'about' ? (
+          <AboutSettings />
         ) : (
           <SettingsPlaceholder title={activeCategory?.title ?? 'Settings'} />
         )}
@@ -3967,6 +3972,56 @@ function SettingsPlaceholder({ title }: { title: string }) {
     <div className="settings-placeholder">
       <h2>{title}</h2>
       <p>Configuration page coming next.</p>
+    </div>
+  )
+}
+
+function AboutSettings() {
+  return (
+    <div className="settings-page-content">
+      <header className="settings-content-header">
+        <h2>About</h2>
+        <p>Stuart version, build, and release information.</p>
+      </header>
+      <div className="settings-sections">
+        <SettingsSectionCard title="Build" className="span-full">
+          <div className="security-policy-body">
+            <div className="security-policy-row">
+              <span className="security-policy-label">Version</span>
+              <span className="security-policy-value">{EXPERIENCE_LAB_VERSION}</span>
+            </div>
+            <div className="security-policy-row">
+              <span className="security-policy-label">Product</span>
+              <span className="security-policy-value">{EXPERIENCE_LAB_VERSION_LABEL}</span>
+            </div>
+          </div>
+        </SettingsSectionCard>
+      </div>
+    </div>
+  )
+}
+
+function DiagnosticsSettings() {
+  return (
+    <div className="settings-page-content">
+      <header className="settings-content-header">
+        <h2>Diagnostics</h2>
+        <p>Runtime health and build identifiers.</p>
+      </header>
+      <div className="settings-sections">
+        <SettingsSectionCard title="Runtime" className="span-full">
+          <div className="security-policy-body">
+            <div className="security-policy-row">
+              <span className="security-policy-label">Frontend version</span>
+              <span className="security-policy-value">{EXPERIENCE_LAB_VERSION}</span>
+            </div>
+            <div className="security-policy-row">
+              <span className="security-policy-label">Core reference</span>
+              <span className="security-policy-value">{MOCK_CORE_VERSION_PLACEHOLDER}</span>
+            </div>
+          </div>
+        </SettingsSectionCard>
+      </div>
     </div>
   )
 }
