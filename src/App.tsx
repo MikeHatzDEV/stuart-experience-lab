@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { EnvironmentSelector, type Environment } from './EnvironmentSelector'
+import { StuartOrb } from './StuartOrb'
 import {
   DEFAULT_CORE_LABEL,
   EXPERIENCE_LAB_VERSION_LABEL,
@@ -18,9 +19,18 @@ const ENVIRONMENT_STATUS_FOOTER = {
   dataLabel: 'Mock stewardship data',
 } as const
 
-type PageId = 'operations' | 'organizations' | 'network' | 'services' | 'assets' | 'audit' | 'settings'
+type PageId =
+  | 'home'
+  | 'operations'
+  | 'organizations'
+  | 'network'
+  | 'services'
+  | 'assets'
+  | 'audit'
+  | 'settings'
 
 const NAV_ITEMS: { id: PageId; label: string }[] = [
+  { id: 'home', label: 'Home' },
   { id: 'operations', label: 'Operations Console' },
   { id: 'organizations', label: 'Organizations' },
   { id: 'network', label: 'Network Console' },
@@ -31,6 +41,10 @@ const NAV_ITEMS: { id: PageId; label: string }[] = [
 ]
 
 const PAGE_META: Record<PageId, { title: string; description: string }> = {
+  home: {
+    title: 'Home',
+    description: 'Your daily starting point — ask Stuart, review awareness, and move into action.',
+  },
   operations: {
     title: 'Operations Console',
     description: 'How Master Stuart is running — live resources, connected systems overview, and active work.',
@@ -59,6 +73,182 @@ const PAGE_META: Record<PageId, { title: string; description: string }> = {
     title: 'Settings',
     description: 'Configure how Stuart communicates, connects, learns, and protects the environment.',
   },
+}
+
+// Home = Stuart application landing page.
+// Stuart Home = future proprietary home/security/environment hardware ecosystem.
+const HOME_QUICK_PROMPTS = [
+  'What happened overnight?',
+  'Show me critical issues',
+  'Any recommendations?',
+  'How is Oppure?',
+] as const
+
+const HOME_QUICK_ACTIONS: { label: string; page?: PageId }[] = [
+  { label: 'Review Briefing' },
+  { label: 'Operations Console', page: 'operations' },
+  { label: 'Network Console', page: 'network' },
+  { label: 'Organizations', page: 'organizations' },
+  { label: 'Services & Applications', page: 'services' },
+  { label: 'New Investigation', page: 'services' },
+]
+
+const HOME_OVERNIGHT_BRIEFING = [
+  'Comcast latency increased for 14 minutes',
+  'Backblaze backup completed successfully',
+  'Oppure renewal due in 41 days',
+  'Adobe Acrobat not used in 18 months',
+  'John accepted Recommendation #42',
+]
+
+const HOME_ORGANIZATIONS_GLANCE = [
+  { name: 'Signal Lab', status: 'Healthy', tone: 'ok' as const },
+  { name: 'Oppure', status: '1 Recommendation', tone: 'warn' as const },
+  { name: 'Maine', status: 'Healthy', tone: 'ok' as const },
+  { name: 'ABC Manufacturing', status: '2 Alerts', tone: 'error' as const },
+  { name: 'John', status: 'Offline 3 days', tone: 'warn' as const },
+]
+
+function HomeAwarenessCard({
+  title,
+  children,
+}: {
+  title: string
+  children: ReactNode
+}) {
+  return (
+    <div className="home-awareness-card">
+      <div className="home-awareness-card-title">{title}</div>
+      <div className="home-awareness-card-body">{children}</div>
+    </div>
+  )
+}
+
+function HomePage({ onNavigate }: { onNavigate: (page: PageId) => void }) {
+  const [query, setQuery] = useState('')
+
+  return (
+    <div className="home-page">
+      <div className="home-layout">
+        <div className="home-main">
+          <div className="home-greeting">
+            <h1 className="home-greeting-primary">Good morning, Michael.</h1>
+            <p className="home-greeting-secondary">I&apos;ve been monitoring while you were away.</p>
+          </div>
+
+          {/* Stuart Identity Artwork v1 is used as the approved Home presence placeholder.
+              A future animated implementation should match this identity rather than replace it. */}
+          <StuartOrb />
+
+          <div className="home-chat">
+            <div className="home-chat-input-row">
+              <button type="button" className="home-chat-icon-btn" aria-label="Voice input">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M12 15a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v6a3 3 0 0 0 3 3Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M19 11a7 7 0 0 1-14 0"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <path d="M12 18v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+              <input
+                className="home-chat-input"
+                type="text"
+                value={query}
+                placeholder="Ask Stuart anything..."
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <button type="button" className="home-chat-send-btn" aria-label="Send">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path
+                    d="m5 12 14-7-7 14 3-3"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="home-prompt-chips">
+              {HOME_QUICK_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt}
+                  type="button"
+                  className="home-prompt-chip"
+                  onClick={() => setQuery(prompt)}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="home-quick-actions">
+            {HOME_QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                className="home-quick-action-card"
+                onClick={() => {
+                  if (action.page) onNavigate(action.page)
+                }}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <aside className="home-awareness" aria-label="Awareness summary">
+          <HomeAwarenessCard title="Overnight Briefing">
+            <ul className="home-awareness-list">
+              {HOME_OVERNIGHT_BRIEFING.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </HomeAwarenessCard>
+
+          <HomeAwarenessCard title="System Health">
+            <div className="home-awareness-stat">All Systems Healthy</div>
+            <div className="home-awareness-meta">Health Score: 98</div>
+          </HomeAwarenessCard>
+
+          <HomeAwarenessCard title="Active Recommendations">
+            <ul className="home-awareness-metrics">
+              <li>
+                <span className="tone-critical">1</span> Critical
+              </li>
+              <li>
+                <span className="tone-warning">3</span> Important
+              </li>
+              <li>
+                <span>7</span> Informational
+              </li>
+            </ul>
+          </HomeAwarenessCard>
+
+          <HomeAwarenessCard title="Organizations at a Glance">
+            <ul className="home-org-glance-list">
+              {HOME_ORGANIZATIONS_GLANCE.map((org) => (
+                <li key={org.name}>
+                  <span className="home-org-glance-name">{org.name}</span>
+                  <span className={`home-org-glance-status tone-${org.tone}`}>{org.status}</span>
+                </li>
+              ))}
+            </ul>
+          </HomeAwarenessCard>
+        </aside>
+      </div>
+    </div>
+  )
 }
 
 const MOCK_ENVIRONMENTS: Environment[] = [
@@ -4913,11 +5103,15 @@ function ProvidersSettings() {
 function PageContent({
   page,
   currentEnvironment,
+  onNavigate,
 }: {
   page: PageId
   currentEnvironment: Environment
+  onNavigate: (page: PageId) => void
 }) {
   switch (page) {
+    case 'home':
+      return <HomePage onNavigate={onNavigate} />
     case 'operations':
       return <OperationsConsole />
     case 'organizations':
@@ -4933,12 +5127,12 @@ function PageContent({
     case 'settings':
       return <SettingsPage />
     default:
-      return <OperationsConsole />
+      return <HomePage onNavigate={onNavigate} />
   }
 }
 
 function App() {
-  const [activePage, setActivePage] = useState<PageId>('operations')
+  const [activePage, setActivePage] = useState<PageId>('home')
   const [currentEnvironment, setCurrentEnvironment] = useState<Environment>(MOCK_ENVIRONMENTS[0])
   const [headerClock, setHeaderClock] = useState(() => new Date())
   const meta = PAGE_META[activePage]
@@ -4997,7 +5191,11 @@ function App() {
         </header>
 
         <main className="page-body">
-          <PageContent page={activePage} currentEnvironment={currentEnvironment} />
+          <PageContent
+            page={activePage}
+            currentEnvironment={currentEnvironment}
+            onNavigate={setActivePage}
+          />
         </main>
       </div>
     </div>

@@ -1,0 +1,131 @@
+/* Stuart Identity Artwork v1 — Home presence presentation.
+   Presence modifiers (--monitoring, --listening, --speaking, --alert) reserve
+   future brightness, glow, and accent shifts without animating the artwork. */
+
+.stuart-orb-wrap {
+  --orb-artwork-width: min(100%, 380px);
+  --orb-artwork-max: 400px;
+  --orb-ambient-strength: 0.16;
+  --orb-artwork-brightness: 1;
+  --orb-edge-feather: 78%;
+  --orb-status-accent: var(--telemetry, #33b5e5);
+  --orb-status-subdued: var(--text-muted, #9fa7b3);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 32px 0 40px;
+}
+
+.stuart-orb-presence {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.stuart-orb-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, var(--orb-artwork-max));
+}
+
+.stuart-orb-ambient {
+  position: absolute;
+  inset: -6% -10%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse 72% 68% at 50% 46%,
+    rgba(0, 150, 230, var(--orb-ambient-strength)) 0%,
+    rgba(0, 90, 180, calc(var(--orb-ambient-strength) * 0.45)) 38%,
+    transparent 72%
+  );
+  filter: blur(18px);
+  pointer-events: none;
+}
+
+.stuart-orb-artwork {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: var(--orb-artwork-width);
+  max-width: var(--orb-artwork-max);
+  height: auto;
+  object-fit: contain;
+  filter: brightness(var(--orb-artwork-brightness))
+    drop-shadow(0 12px 40px rgba(0, 100, 180, 0.28))
+    drop-shadow(0 0 64px rgba(0, 170, 255, 0.14));
+  -webkit-mask-image: radial-gradient(
+    ellipse 90% 88% at 50% 47%,
+    #000 var(--orb-edge-feather),
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 90% 88% at 50% 47%,
+    #000 var(--orb-edge-feather),
+    transparent 100%
+  );
+}
+
+.stuart-orb-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.stuart-orb-status-primary {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--orb-status-accent);
+}
+
+.stuart-orb-status-secondary {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--orb-status-subdued);
+  opacity: 0.72;
+}
+
+/* ─── Presence modes (behavior reserved for future iterations) ─── */
+
+.stuart-orb-wrap--monitoring {
+  --orb-ambient-strength: 0.16;
+  --orb-artwork-brightness: 1;
+}
+
+.stuart-orb-wrap--listening {
+  --orb-ambient-strength: 0.24;
+  --orb-artwork-brightness: 1.04;
+  --orb-edge-feather: 80%;
+}
+
+.stuart-orb-wrap--speaking {
+  --orb-ambient-strength: 0.28;
+  --orb-artwork-brightness: 1.06;
+}
+
+.stuart-orb-wrap--alert {
+  --orb-ambient-strength: 0.2;
+  --orb-status-accent: #d4a84a;
+  --orb-status-subdued: rgba(212, 168, 74, 0.65);
+}
+
+@media (max-width: 640px) {
+  .stuart-orb-wrap {
+    --orb-artwork-width: min(100%, 330px);
+    --orb-artwork-max: 360px;
+    margin: 24px 0 32px;
+  }
+
+  .stuart-orb-status {
+    margin-top: 16px;
+  }
+}
