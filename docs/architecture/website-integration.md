@@ -1,6 +1,6 @@
 # Website Integration — Domain Architecture
 
-Foundation v2 · Platform version `0.2.1-Alpha_v2`
+Foundation v3 · Platform version `0.2.2-Alpha_v2`
 
 ## One application
 
@@ -12,23 +12,48 @@ Foundation v2 · Platform version `0.2.1-Alpha_v2`
 |-------|------|
 | `/` | **Public website** — landing page at `https://signallabsystems.com/` |
 | `/login` | **Authentication** — existing login screen (mock until central Stuart auth) |
+| `/organizations` | **Organization selection** — bridge between authentication and platform |
 | `/app` | **Experience Platform** — full Stuart product shell (unchanged) |
 
-## User journey
+## Approved user journey
 
 ```
 https://signallabsystems.com/
         ↓
-   /  Public landing
+   /  Landing
         ↓  [Access Stuart]
    /login  Authentication
         ↓
+   /organizations  Organization selection
+        ↓  [Open Stuart]
    /app  Experience Platform
 ```
 
-When `VITE_AUTH_DEV_BOOTSTRAP` is enabled (development default), `/app` may load with an auto-established mock session. Otherwise the existing mock credentials → MFA → Access Stuart flow applies before entering `/app`.
+### Architecture layers
 
-## Landing page (v2)
+- **Authentication** determines WHO the user is.
+- **Organization selection** determines WHICH environment the user wishes to access.
+- **Experience Platform** operates within the selected organization context.
+
+When `VITE_AUTH_DEV_BOOTSTRAP` is enabled (development default), `/app` still requires organization selection in the current session unless the operator has already chosen an organization via **Open Stuart**.
+
+## Organization selection (v1)
+
+Foundation v1 exposes a single organization:
+
+| Field | Value |
+|-------|--------|
+| Organization | Signal Lab |
+| Description | Primary development and testing environment for Stuart. |
+| Status | Healthy |
+| Role | Owner |
+| Primary Stuart Core | COMMS-01 (Planned) |
+
+Even with one organization, operators see the selection page to establish the workflow before multiple organizations exist.
+
+Organization creation, Stuart Core enrollment, and production authentication are not implemented.
+
+## Landing page
 
 The root URL is a minimal public front door:
 
@@ -39,14 +64,13 @@ The root URL is a minimal public front door:
 - Footer placeholders (Documentation, Downloads, Support, Contact) — disabled
 - Platform version from `package.json`
 
-No downloads, accounts, documentation content, or marketing sections.
-
 ## Future routes (not implemented)
 
 - Downloads
 - Documentation
 - Support
 - Account / customer portal
+- Organization management
 
 ## Principles
 

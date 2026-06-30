@@ -1,17 +1,17 @@
 /**
  * Stuart — Integrated Application Router
  *
- * Architecture (Website Integration Foundation v1):
+ * Architecture (Post-Login Organization Entry Foundation v1):
  *
- * One application serves www.signallabsystems.com and the Stuart Experience Platform.
- * The public website is intentionally lightweight — it introduces Stuart and directs
- * users to Access Stuart. The Experience Platform at /app remains the primary product.
- * Marketing content must never become the focus of development effort.
+ * Authentication determines WHO the user is.
+ * Organization selection determines WHICH environment the user wishes to access.
+ * The Experience Platform operates within the selected organization context.
  *
  * Routes:
- *   /        — Landing (public front door)
- *   /login   — Authentication entry (mock until central Stuart auth)
- *   /app     — Experience Platform (existing product shell)
+ *   /              — Landing (public front door)
+ *   /login         — Authentication entry (mock until central Stuart auth)
+ *   /organizations — Organization selection (bridge between auth and platform)
+ *   /app           — Experience Platform (existing product shell)
  *
  * Future routes may include Downloads, Documentation, Support, and Account.
  */
@@ -19,8 +19,11 @@
 import { useEffect } from 'react'
 import { useAuth } from './auth/AuthContext'
 import { SessionGate } from './auth/SessionGate'
+import { OrganizationGate } from './app/OrganizationGate'
+import { clearSelectedOrganization } from './app/organizationSelection'
 import { LoginScreen } from './auth/LoginScreen'
 import { LandingPage } from './pages/LandingPage'
+import { OrganizationSelectionPage } from './pages/OrganizationSelectionPage'
 import { ExperiencePlatform } from './ExperiencePlatform'
 import { useAppRoute } from './app/routing'
 
@@ -29,8 +32,20 @@ function App() {
   const { status, isAuthenticated } = useAuth()
 
   useEffect(() => {
+    if (route === '/login' && status === 'unauthenticated') {
+      clearSelectedOrganization()
+    }
+  }, [route, status])
+
+  useEffect(() => {
     if (route === '/login' && status !== 'initializing' && isAuthenticated) {
-      navigate('/app')
+      navigate('/organizations')
+    }
+  }, [route, status, isAuthenticated, navigate])
+
+  useEffect(() => {
+    if (route === '/organizations' && status !== 'initializing' && !isAuthenticated) {
+      navigate('/login')
     }
   }, [route, status, isAuthenticated, navigate])
 
@@ -44,15 +59,23 @@ function App() {
     return (
       <LoginScreen
         onBack={() => navigate('/')}
-        onSuccess={() => navigate('/app')}
+        onSuccess={() => navigate('/organizations')}
       />
     )
+  }
+
+  if (route === '/organizations') {
+    if (status === 'initializing') return null
+    if (!isAuthenticated) return null
+    return <OrganizationSelectionPage onOpenStuart={() => navigate('/app')} />
   }
 
   if (route === '/app') {
     return (
       <SessionGate onUnauthenticated={() => navigate('/login')}>
-        <ExperiencePlatform />
+        <OrganizationGate onUnselected={() => navigate('/organizations')}>
+          <ExperiencePlatform />
+        </OrganizationGate>
       </SessionGate>
     )
   }
