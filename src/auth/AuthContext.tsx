@@ -27,7 +27,7 @@ type AuthContextValue = {
   currentUser: StuartUser
   session: SessionDisplay
   authNotice: string | null
-  signIn: () => Promise<void>
+  signIn: () => Promise<boolean>
   signOut: () => Promise<void>
 }
 
@@ -70,13 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signIn = useCallback(async () => {
+  const signIn = useCallback(async (): Promise<boolean> => {
     setAuthNotice(null)
     const result = await authService.signIn({})
     if (result.success) {
       setSession(result.session)
       setStatus('authenticated')
-      return
+      return true
     }
 
     if (result.error.code === 'ServerUnavailable') {
@@ -85,10 +85,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (result.status === 'mfa_required') {
       setStatus('mfa_required')
-      return
+      return false
     }
 
     setStatus('unauthenticated')
+    return false
   }, [])
 
   const signOut = useCallback(async () => {
