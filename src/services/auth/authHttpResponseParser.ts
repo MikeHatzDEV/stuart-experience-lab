@@ -28,7 +28,8 @@ function isSession(value: unknown): value is Session {
     typeof record.sessionId === 'string' &&
     typeof record.authenticated === 'boolean' &&
     record.currentUser !== null &&
-    typeof record.currentUser === 'object'
+    typeof record.currentUser === 'object' &&
+    typeof (record.currentUser as Session['currentUser']).userId === 'string'
   )
 }
 

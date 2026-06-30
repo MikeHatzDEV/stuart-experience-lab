@@ -3,11 +3,9 @@ import { StuartOrb } from '../StuartOrb'
 import { useAuth } from './AuthContext'
 import './LoginScreen.css'
 
-// TODO(auth-v2): Wire to POST /auth/login and POST /auth/mfa/verify.
-// See docs/authentication_foundation_v2.md — §6, §12.
 export function LoginScreen() {
   const { signIn, authNotice } = useAuth()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [step, setStep] = useState<'credentials' | 'mfa'>('credentials')
   const [mfaCode, setMfaCode] = useState('')
@@ -34,14 +32,14 @@ export function LoginScreen() {
         {step === 'credentials' ? (
           <form className="login-form" onSubmit={handleCredentialsSubmit}>
             <label className="login-field">
-              <span className="login-field-label">Email or username</span>
+              <span className="login-field-label">Email</span>
               <input
                 className="login-input"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="mhatzopoulos"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="michael@signallabsystems.com"
               />
             </label>
 

@@ -1,7 +1,7 @@
 import { MOCK_SECURITY_POLICY, MOCK_USER_AUDIT_EVENTS } from './mockAuth'
 
 // TODO(auth-v2): Load policy and audit events from Stuart Auth API.
-// See docs/authentication_foundation_v2.md — §8, §11 Phase 4.
+// See docs/authentication_foundation_v2.md — §8, §19.
 function PolicyRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="security-policy-row">
@@ -94,7 +94,10 @@ export function SecuritySettings() {
         <section className="settings-section-card span-full">
           <header className="settings-section-header">
             <h3>Security Audit Awareness</h3>
-            <p>Recent user and session events (mock — no audit backend).</p>
+            <p>
+              Recent user and session events (mock). Audit records reference immutable User ID;
+              display names and emails are informational only.
+            </p>
           </header>
           <div className="settings-section-body">
             <table className="data-table settings-sessions-table">
@@ -102,7 +105,10 @@ export function SecuritySettings() {
                 <tr>
                   <th>Time</th>
                   <th>Event</th>
-                  <th>Actor</th>
+                  <th>User ID</th>
+                  <th>Display Name</th>
+                  <th>Role</th>
+                  <th>Email</th>
                   <th>Detail</th>
                 </tr>
               </thead>
@@ -111,7 +117,10 @@ export function SecuritySettings() {
                   <tr key={entry.id}>
                     <td>{entry.time}</td>
                     <td>{entry.event}</td>
-                    <td>{entry.actor}</td>
+                    <td className="user-id-mono">{entry.actor.userId}</td>
+                    <td>{entry.actor.displayName}</td>
+                    <td>{entry.actor.role}</td>
+                    <td>{entry.actor.email ?? '—'}</td>
                     <td>{entry.detail}</td>
                   </tr>
                 ))}

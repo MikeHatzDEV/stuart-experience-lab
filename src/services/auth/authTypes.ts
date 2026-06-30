@@ -1,5 +1,12 @@
 /*
  * Stuart authentication types — shared across UI, service layer, and providers.
+ *
+ * Identity standards (ADR-001):
+ * - Authentication identifies users by email.
+ * - Authorization and audit reference immutable userId.
+ * - displayName is presentation only.
+ *
+ * See docs/architecture/ADR-001-Central-Stuart-Authentication.md
  * See docs/authentication_foundation_v2.md
  */
 
@@ -7,28 +14,29 @@ export type StuartRole = 'Owner' | 'Admin' | 'Operator' | 'Viewer'
 
 export type StuartMfaStatus = 'Enabled' | 'Pending' | 'Disabled'
 
-export type StuartAccountStatus = 'Active' | 'Invited' | 'Inactive'
+export type StuartUserStatus = 'Active' | 'Invited' | 'Inactive'
+
+/** @deprecated Use StuartUserStatus */
+export type StuartAccountStatus = StuartUserStatus
 
 export type StuartSessionType = 'Preview Session' | 'Authenticated Session'
 
 export type AuthenticationMethod = 'preview' | 'password' | 'sso'
 
-/** Operator identity — maps to target API user model (docs §3). */
+/**
+ * Operator identity — maps to Central Stuart Authentication user model.
+ * userId is immutable; email is the unique login identifier (no separate username).
+ */
 export type StuartUser = {
-  id: string
-  displayName: string
-  username: string
+  userId: string
   email: string
+  displayName: string
   role: StuartRole
+  status: StuartUserStatus
   mfaEnabled: boolean
   mfaStatus: StuartMfaStatus
-  accountStatus: StuartAccountStatus
 }
 
-/**
- * Authenticated session — replaces frontend boolean auth flag.
- * Display fields (sessionType, device, etc.) are populated by the active provider.
- */
 export type Session = {
   sessionId: string
   authenticated: boolean
@@ -44,7 +52,6 @@ export type Session = {
   durationLabel: string
 }
 
-/** Legacy display shape — subset of Session for UI compatibility. */
 export type SessionDisplay = Pick<
   Session,
   'sessionType' | 'authenticatedAt' | 'device' | 'location' | 'durationLabel'
@@ -69,8 +76,9 @@ export type AuthError = {
   message: string
 }
 
+/** Sign-in uses email + password only (no username). */
 export type SignInRequest = {
-  usernameOrEmail?: string
+  email?: string
   password?: string
 }
 

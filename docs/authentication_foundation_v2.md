@@ -1,14 +1,58 @@
 # Stuart Authentication Foundation v2
 
-**Status:** Phase 3 complete — production auth provider skeleton in Experience Lab  
+**Status:** Phase 4 complete — identity standards foundation in Experience Lab  
 **Scope:** Experience Lab (`stuart-grafana-prototype`)  
 **Date:** June 2026  
 
-This document defines how Stuart moves from the current mock user system to real authentication. Phase 3 adds the production provider skeleton; passwords, MFA verification, and Stuart Core connections are not implemented yet.
+This document defines how Stuart moves from the current mock user system to real authentication. Phase 4 establishes identity standards aligned with [ADR-001](architecture/ADR-001-Central-Stuart-Authentication.md). Passwords, MFA verification, and Stuart Core connections are not implemented yet.
 
 ---
 
-## 1. Audit of Current Mock Foundation
+## 2. Identity Standards
+
+Permanent rules — see [ADR-001 §8](architecture/ADR-001-Central-Stuart-Authentication.md#8-identity-standards).
+
+| Rule | Standard |
+|------|----------|
+| Login | **Email** is the unique login identifier |
+| Usernames | **Not supported** |
+| User ID | Immutable UUID — authoritative identity for authorization and audit |
+| Display Name | Presentation only (header, greetings); may change |
+| Email | May change; used for authentication only |
+| Audit | Always records **User ID**; display name and email are informational |
+
+### Frontend identity model (`StuartUser`)
+
+```
+userId, email, displayName, role, status, mfaEnabled
+```
+
+### Audit actor model
+
+```
+userId, displayName, role, email (optional)
+```
+
+Audit integrity depends on immutable User IDs. Display names and email addresses must never be used as the sole audit key.
+
+### Intended database model (future)
+
+| Column | Notes |
+|--------|-------|
+| `user_id` | PRIMARY KEY — never changes, never reused |
+| `email` | UNIQUE — login identifier |
+| `display_name` | Presentation only |
+| `password_hash` | Server only |
+| `role` | Owner / Admin / Operator / Viewer |
+| `status` | active / invited / inactive / locked |
+| `mfa_enabled` | boolean |
+| `created_at` | timestamp |
+| `updated_at` | timestamp |
+| `last_login` | timestamp |
+
+---
+
+## 3. Audit of Current Mock Foundation
 
 ### 1.1 What exists today
 
@@ -58,7 +102,7 @@ This document defines how Stuart moves from the current mock user system to real
 
 ---
 
-## 2. Current vs Target Behavior
+## 4. Current vs Target Behavior
 
 ### 2.1 Current (mock)
 
@@ -77,7 +121,7 @@ User opens app
 User opens app
   → Frontend calls GET /auth/session (credentials: include)
   → If no valid session: SessionGate shows LoginScreen
-  → POST /auth/login with username/email + password
+  → POST /auth/login with email + password
   → If MFA required: return mfa_challenge_id; show MFA screen
   → POST /auth/mfa/verify → server creates session (HttpOnly cookie)
   → Frontend receives user profile + org memberships + permissions
@@ -88,26 +132,25 @@ User opens app
 
 ---
 
-## 3. Target User Account Model
+## 5. Target User Account Model
 
-Canonical fields (API / database). Frontend may use camelCase equivalents.
+Canonical fields (API / database). Frontend uses camelCase (`userId`, `displayName`, etc.).
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `user_id` | UUID | Stable primary key; never reused |
-| `display_name` | string | Operator-facing name (e.g. "Michael") |
-| `username` | string | Unique login identifier (e.g. `mhatzopoulos`) |
-| `email` | string | Unique; used for login, invites, recovery |
+| `user_id` | UUID | Stable primary key; **never reused, never changes** |
+| `email` | string | **Unique login identifier** (no separate username) |
+| `display_name` | string | Operator-facing presentation only (e.g. "Michael") |
 | `role` | enum | Global default role: `owner` \| `admin` \| `operator` \| `viewer` |
-| `mfa_enabled` | boolean | Whether MFA is configured and active |
-| `mfa_status` | enum | `enabled` \| `pending` \| `disabled` |
 | `status` | enum | `active` \| `invited` \| `inactive` \| `locked` |
+| `mfa_enabled` | boolean | Whether MFA is configured and active |
+| `mfa_status` | enum | `enabled` \| `pending` \| `disabled` (UI display) |
 | `created_at` | ISO 8601 | Account creation timestamp |
 | `last_login_at` | ISO 8601 \| null | Last successful full authentication |
 | `failed_login_count` | integer | Consecutive failures; reset on success |
 | `password_changed_at` | ISO 8601 \| null | For rotation policy enforcement |
 | `invited_by` | user_id \| null | Who sent the invitation |
-| `organization_memberships` | array | See §7 — overrides global role per org |
+| `organization_memberships` | array | See organization access — overrides global role per org |
 
 **Not stored in frontend:** password hashes, MFA secrets, backup code plaintext, session tokens.
 
@@ -115,7 +158,7 @@ Canonical fields (API / database). Frontend may use camelCase equivalents.
 
 ---
 
-## 4. Role Model
+## 6. Role Model
 
 Four roles are retained. Permissions are enforced **server-side**; UI hides unauthorized actions but is not the security boundary.
 
@@ -422,7 +465,25 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 - MFA verification backend
 - Enabling production provider on Cloudflare without Stuart Auth API
 
-### Phase 4 — Credential validation & session cookies
+### Phase 4 — Identity standards foundation (complete)
+
+**Experience Lab frontend + documentation:**
+
+- [ADR-001 §8](architecture/ADR-001-Central-Stuart-Authentication.md#8-identity-standards) — Identity Standards approved
+- `StuartUser`: `userId`, `email`, `displayName`, `role`, `status`, `mfaEnabled` (no username)
+- Login: **Email** + Password (no username field)
+- Header: Display Name + Role only (never email as primary identity)
+- Users table: Display Name, Email, Role, Status, MFA, User ID
+- Audit: `UserAuditActor` with immutable `userId`; display name and email informational
+- `SignInRequest.email` replaces `usernameOrEmail`
+
+**Not in Phase 4:**
+
+- Real password validation
+- Database implementation
+- MFA backend
+
+### Phase 5 — Credential validation & session cookies
 
 - Real login validation with error states in `LoginScreen`
 - HttpOnly session cookies
@@ -483,14 +544,13 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 
 | Mock (`StuartUser`) | Target API field |
 |---------------------|------------------|
-| `id` | `user_id` |
+| `userId` | `user_id` |
+| `email` | `email` (unique login identifier) |
 | `displayName` | `display_name` |
-| `username` | `username` |
-| `email` | `email` |
 | `role` | `role` |
+| `status` | `status` |
 | `mfaEnabled` | `mfa_enabled` |
 | `mfaStatus` | `mfa_status` |
-| `accountStatus` | `status` |
 | *(missing)* | `created_at` |
 | *(missing)* | `last_login_at` |
 | *(missing)* | `failed_login_count` |
@@ -722,8 +782,36 @@ HTTP responses parsed to `Session`, `SignInResult`, `MfaVerifyResult`, and `Auth
 | Graceful failure messaging | ✓ |
 | Stuart Auth API deployed | ☐ |
 | Backend enable flag | ☐ |
-| Password validation | ☐ Phase 4 |
-| MFA backend | ☐ Phase 5 |
+| Password validation | ☐ Phase 5 |
+| MFA backend | ☐ Phase 6 |
+| Identity standards | ✓ Phase 4 |
+
+---
+
+## 19. Phase 4 Implementation — Identity Standards
+
+Aligned with [ADR-001 §8](architecture/ADR-001-Central-Stuart-Authentication.md#8-identity-standards).
+
+### 19.1 Identity model
+
+| Layer | Identifier |
+|-------|------------|
+| Authentication (login) | Email |
+| Authorization | `userId` (immutable UUID) |
+| Presentation | `displayName` |
+| Audit | `userId` required; `displayName` and `email` optional |
+
+### 19.2 Login model
+
+Login screen: **Email** + **Password**. `SignInRequest`: `{ email, password }`. No username.
+
+### 19.3 Audit model
+
+`UserAuditActor` includes `userId`, `displayName`, `role`, optional `email`. Audit integrity depends on immutable User IDs.
+
+### 19.4 What unchanged
+
+Mock authentication active; no passwords, MFA, database, or Core connection.
 
 ---
 

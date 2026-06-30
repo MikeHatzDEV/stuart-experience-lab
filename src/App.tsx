@@ -3661,15 +3661,15 @@ function AuditPage({ currentEnvironment }: { currentEnvironment: Environment }) 
       time: entry.time,
       severity: 'information' as const,
       category: 'SECURITY' as const,
-      actor: entry.actor,
+      actor: entry.actor.userId,
       action: entry.event,
       detail: entry.detail,
-      observation: entry.detail,
-      reason: 'Mock user-system audit entry for Experience Lab preview.',
+      observation: `${entry.actor.displayName} (${entry.actor.role})${entry.actor.email ? ` · ${entry.actor.email}` : ''} — ${entry.detail}`,
+      reason: 'Audit integrity references immutable User ID; display name and email are informational.',
       confidence: '100%',
       recommendedAction: 'No action required in preview mode.',
       relatedEvents: [] as string[],
-      evidence: ['Mock session audit log'],
+      evidence: [`Actor User ID: ${entry.actor.userId}`, 'Mock session audit log'],
     })),
   ]
 
@@ -4407,7 +4407,7 @@ const USER_SESSIONS = [
 ]
 
 function userAccountStatusTone(
-  status: (typeof MOCK_STUART_USERS)[number]['accountStatus'],
+  status: (typeof MOCK_STUART_USERS)[number]['status'],
 ): 'ok' | 'warn' | 'info' {
   if (status === 'Active') return 'ok'
   if (status === 'Invited') return 'info'
@@ -4442,6 +4442,10 @@ function UsersSettings() {
             <div className="active-user-name">{currentUser.displayName}</div>
             <div className="active-user-grid">
               <div className="active-user-field">
+                <span className="active-user-field-label">User ID</span>
+                <span className="active-user-field-value user-id-mono">{currentUser.userId}</span>
+              </div>
+              <div className="active-user-field">
                 <span className="active-user-field-label">Role</span>
                 <span className="active-user-field-value">{currentUser.role}</span>
               </div>
@@ -4449,7 +4453,7 @@ function UsersSettings() {
                 <span className="active-user-field-label">Status</span>
                 <span className="active-user-field-value online">
                   <span className="user-account-status-dot" />
-                  {currentUser.accountStatus}
+                  {currentUser.status}
                 </span>
               </div>
               <div className="active-user-field">
@@ -4477,17 +4481,26 @@ function UsersSettings() {
           <table className="data-table settings-sessions-table users-directory-table">
             <thead>
               <tr>
-                <th>User</th>
+                <th>Display Name</th>
+                <th>Email</th>
                 <th>Role</th>
-                <th>MFA</th>
                 <th>Status</th>
+                <th>MFA</th>
+                <th>User ID</th>
               </tr>
             </thead>
             <tbody>
               {MOCK_STUART_USERS.map((user) => (
-                <tr key={user.id}>
+                <tr key={user.userId}>
                   <td>{user.displayName}</td>
+                  <td>{user.email}</td>
                   <td>{user.role}</td>
+                  <td>
+                    <StatusBadge
+                      label={user.status}
+                      tone={userAccountStatusTone(user.status)}
+                    />
+                  </td>
                   <td>
                     {user.mfaStatus === 'Enabled'
                       ? 'MFA Enabled'
@@ -4495,12 +4508,7 @@ function UsersSettings() {
                         ? 'MFA Pending'
                         : 'MFA Disabled'}
                   </td>
-                  <td>
-                    <StatusBadge
-                      label={user.accountStatus}
-                      tone={userAccountStatusTone(user.accountStatus)}
-                    />
-                  </td>
+                  <td className="user-id-mono">{user.userId}</td>
                 </tr>
               ))}
             </tbody>
@@ -4555,7 +4563,7 @@ function UsersSettings() {
         <SettingsSectionCard title="Authentication" subtitle="How users sign in and stay secure">
           <SettingToggle label="Windows Login Integration" description="Use Windows credentials for Stuart sign-in." checked={windowsLogin} onChange={setWindowsLogin} />
           <SettingToggle label="Multi-Factor Authentication" description="Require a second factor for privileged roles." checked={mfa} onChange={setMfa} />
-          <SettingToggle label="Local Accounts" description="Allow Stuart-managed username and password accounts." checked={localAccounts} onChange={setLocalAccounts} />
+          <SettingToggle label="Local Accounts" description="Allow Stuart-managed email and password accounts." checked={localAccounts} onChange={setLocalAccounts} />
           <SettingToggle label="Password Expiration" description="Require periodic password rotation for local accounts." checked={passwordExpiration} onChange={setPasswordExpiration} />
           <SettingSelect
             label="Session Timeout"

@@ -253,7 +253,52 @@ Session cookies are issued by the Authentication Service. The Experience Platfor
 
 ---
 
-## 8. Cross References
+## 8. Identity Standards
+
+Permanent architectural rules for how Stuart identifies people across the platform.
+
+| Rule | Standard |
+|------|----------|
+| **Login identifier** | Email address is the unique login identifier |
+| **Usernames** | Stuart does **not** support separate usernames |
+| **User ID** | Every account receives an immutable `user_id` (UUID) at creation |
+| **Display Name** | Presentation only — shown in header and operator-facing UI |
+| **Email** | May change over time (with verification) |
+| **Display Name** | May change at any time |
+| **User ID** | **Never** changes; never reused after account deletion |
+
+### Authoritative identity
+
+- **Authentication** identifies users by **email** + password (+ MFA).
+- **Authorization** identifies users by immutable **User ID**.
+- **Audit** records always reference **User ID**; display name and email are informational context only.
+
+### Why this was chosen
+
+- **Single clear login** — operators sign in with the email they already know; no parallel username namespace.
+- **Audit integrity** — immutable User IDs survive display name and email changes; historical audit remains trustworthy.
+- **Enterprise alignment** — matches how central identity services (ADR-001) issue stable principal identifiers.
+- **Simpler support** — administrators troubleshoot by User ID; operators see friendly display names.
+
+### Intended database model (future)
+
+```
+User
+  user_id          PRIMARY KEY — never changes, never reused
+  email            UNIQUE — login identifier
+  display_name     presentation only
+  password_hash
+  role
+  status
+  mfa_enabled
+  created_at
+  updated_at
+  last_login
+```
+
+---
+
+## 9. Cross References
 
 | Document | Location | Relationship |
 |----------|----------|--------------|
@@ -261,6 +306,7 @@ Session cookies are issued by the Authentication Service. The Experience Platfor
 | Authentication Phase 1 | Foundation v2 §11, §16 | Auth service abstraction, provider pattern, session model |
 | Authentication Phase 2 | Foundation v2 §11, §17 | HTTP client boundary, endpoint contracts, mock transport |
 | Authentication Phase 3 | Foundation v2 §11, §18 | Production provider skeleton, environment switching, graceful failure |
+| Authentication Phase 4 | Foundation v2 §11, §19 | Identity standards — email login, immutable User ID |
 
 The Experience Lab implementation (`src/services/auth/`) is exploratory frontend infrastructure aligned with this ADR. It does not replace the Central Authentication Service — it prepares the platform to consume it.
 
@@ -274,10 +320,12 @@ The Experience Lab implementation (`src/services/auth/`) is exploratory frontend
 | Rejected | Per-Core authentication | Duplicates users, MFA, and permissions; does not scale |
 | Session transport | HttpOnly cookies via Auth Service | Documented in Authentication Foundation v2 |
 | Core boundary | Core never stores identity | Keeps stewardship domain focused and security surface smaller |
+| Identity login | Email only (no username) | Single operator-facing identifier; aligns with enterprise IdP practice |
+| Identity authority | Immutable User ID | Audit and authorization integrity across email/display name changes |
 
 ---
 
-## 10. Approval
+## 11. Approval
 
 This ADR is **APPROVED** and supersedes any informal assumption that Stuart Core would own operator identity.
 

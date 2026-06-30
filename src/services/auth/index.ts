@@ -64,6 +64,7 @@ export type {
   SignInRequest,
   SignInResult,
   StuartAccountStatus,
+  StuartUserStatus,
   StuartMfaStatus,
   StuartRole,
   StuartSessionType,

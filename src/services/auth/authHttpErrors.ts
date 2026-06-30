@@ -1,7 +1,7 @@
 import type { AuthError, AuthErrorCode } from './authTypes'
 
 const HTTP_ERROR_MESSAGES: Record<AuthErrorCode, string> = {
-  InvalidCredentials: 'The email, username, or password is incorrect.',
+  InvalidCredentials: 'The email or password is incorrect.',
   SessionExpired: 'Your session has expired. Please sign in again.',
   MfaRequired: 'Multi-factor authentication is required to continue.',
   AccountLocked: 'This account is temporarily locked. Contact an administrator.',

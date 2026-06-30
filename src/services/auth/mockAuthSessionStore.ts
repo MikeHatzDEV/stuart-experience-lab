@@ -12,7 +12,7 @@ export function createMockSessionRecord(): Session {
   const expiresAt = new Date(now + MOCK_SESSION_TTL_MS).toISOString()
 
   return {
-    sessionId: `preview-${MOCK_CURRENT_USER.id}-${now}`,
+    sessionId: `preview-${MOCK_CURRENT_USER.userId}-${now}`,
     authenticated: true,
     currentUser: MOCK_CURRENT_USER,
     createdAt,

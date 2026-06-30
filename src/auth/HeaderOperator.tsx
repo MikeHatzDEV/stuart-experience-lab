@@ -47,9 +47,7 @@ export function HeaderOperator() {
         <div className="header-operator-menu" role="menu">
           <div className="header-operator-menu-header">
             <div className="header-operator-menu-name">{currentUser.displayName}</div>
-            <div className="header-operator-menu-meta">
-              @{currentUser.username} · {currentUser.role}
-            </div>
+            <div className="header-operator-menu-meta">{currentUser.role}</div>
             <div className="header-operator-menu-session">{session.sessionType}</div>
           </div>
           <button
