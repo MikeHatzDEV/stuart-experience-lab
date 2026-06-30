@@ -152,6 +152,128 @@
   flex-shrink: 0;
 }
 
+.header-operator {
+  position: relative;
+}
+
+.header-operator-trigger {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.header-operator-trigger:hover {
+  background: var(--bg-panel-hover);
+  border-color: #3d4a52;
+}
+
+.header-operator-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #2a4a68 0%, #1a3048 100%);
+  border: 1px solid rgba(126, 200, 232, 0.25);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #d8ecfa;
+}
+
+.header-operator-identity {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.2;
+  text-align: left;
+}
+
+.header-operator-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-heading);
+}
+
+.header-operator-role {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.header-operator-identity-compact {
+  display: none;
+}
+
+.header-operator-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 200px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-header);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.header-operator-menu-header {
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 4px;
+}
+
+.header-operator-menu-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-heading);
+}
+
+.header-operator-menu-meta {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.header-operator-menu-session {
+  margin-top: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--telemetry);
+}
+
+.header-operator-menu-item {
+  appearance: none;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.header-operator-menu-item:hover {
+  background: var(--bg-panel-hover);
+}
+
+.show-mobile-only {
+  display: none;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -2688,6 +2810,80 @@ button.panel-clickable {
   color: var(--status-ok);
 }
 
+.active-user-actions {
+  margin-top: 16px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.users-directory-table td:first-child {
+  font-weight: 500;
+  color: var(--text-heading);
+}
+
+/* Security settings */
+.security-policy-body {
+  padding: 12px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.security-policy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.security-policy-row:last-of-type {
+  border-bottom: none;
+}
+
+.security-policy-label {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.security-policy-value {
+  font-size: 13px;
+  color: var(--text-heading);
+}
+
+.security-policy-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--bg-input);
+}
+
+.security-policy-badge.enabled {
+  color: var(--status-ok);
+  border-color: rgba(115, 191, 105, 0.35);
+  background: rgba(115, 191, 105, 0.08);
+}
+
+.security-policy-badge.planned {
+  color: var(--telemetry);
+  border-color: rgba(51, 181, 229, 0.3);
+  background: rgba(51, 181, 229, 0.08);
+}
+
+.security-policy-note {
+  margin: 8px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.security-policy-warning {
+  color: rgba(212, 168, 74, 0.85);
+}
+
 .user-accounts-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3346,6 +3542,12 @@ button.panel-clickable {
 
   .header-right .hide-mobile {
     display: none;
+  }
+
+  .header-operator-identity-compact.show-mobile-only {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .settings-shell {

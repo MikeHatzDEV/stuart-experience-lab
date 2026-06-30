@@ -1,4 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { HeaderOperator } from './auth/HeaderOperator'
+import { SecuritySettings } from './auth/SecuritySettings'
+import { SessionGate } from './auth/SessionGate'
+import {
+  MOCK_STUART_ROLES,
+  MOCK_STUART_USERS,
+  MOCK_USER_AUDIT_EVENTS,
+} from './auth/mockAuth'
+import { useAuth } from './auth/AuthContext'
 import { EnvironmentSelector, type Environment } from './EnvironmentSelector'
 import { StuartOrb } from './StuartOrb'
 import {
@@ -3646,6 +3655,21 @@ function AuditPage({ currentEnvironment }: { currentEnvironment: Environment }) 
       relatedEvents: ['Asset inventory refresh at 22:45'],
       evidence: ['Reachability probe log', 'Asset record Printer-HR'],
     },
+    ...MOCK_USER_AUDIT_EVENTS.map((entry) => ({
+      id: entry.id,
+      time: entry.time,
+      severity: 'information' as const,
+      category: 'SECURITY' as const,
+      actor: entry.actor,
+      action: entry.event,
+      detail: entry.detail,
+      observation: entry.detail,
+      reason: 'Mock user-system audit entry for Experience Lab preview.',
+      confidence: '100%',
+      recommendedAction: 'No action required in preview mode.',
+      relatedEvents: [] as string[],
+      evidence: ['Mock session audit log'],
+    })),
   ]
 
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null)
@@ -3928,6 +3952,8 @@ function SettingsPage() {
           <UsersSettings />
         ) : activeSection === 'providers' ? (
           <ProvidersSettings />
+        ) : activeSection === 'security' ? (
+          <SecuritySettings />
         ) : (
           <SettingsPlaceholder title={activeCategory?.title ?? 'Settings'} />
         )}
@@ -4295,77 +4321,6 @@ function CommunicationSettings() {
   )
 }
 
-const USER_ACCOUNTS = [
-  {
-    id: 'michael',
-    name: 'Michael Hatzopoulos',
-    role: 'Owner',
-    status: 'Online',
-    tone: 'ok' as const,
-    lastLogin: 'Today 07:12',
-    device: 'MSI Workstation',
-    enabled: true,
-  },
-  {
-    id: 'john',
-    name: 'John',
-    role: 'Administrator',
-    status: 'Offline',
-    tone: 'info' as const,
-    lastLogin: 'Yesterday 18:40',
-    device: 'XPS Laptop',
-    enabled: true,
-  },
-  {
-    id: 'matthew',
-    name: 'Matthew',
-    role: 'Operator',
-    status: 'Online',
-    tone: 'ok' as const,
-    lastLogin: 'Today 09:44',
-    device: 'COMMS-01',
-    enabled: true,
-  },
-  {
-    id: 'guest',
-    name: 'Guest',
-    role: 'Guest',
-    status: 'Disabled',
-    tone: 'warn' as const,
-    lastLogin: 'Never',
-    device: '—',
-    enabled: false,
-  },
-]
-
-const USER_ROLES = [
-  {
-    title: 'Owner',
-    description: 'Full environment authority.',
-    permissions: ['Full control', 'System configuration', 'User management', 'Security', 'All approvals'],
-  },
-  {
-    title: 'Administrator',
-    description: 'Configure and approve steward actions.',
-    permissions: ['Configure Stuart', 'Approve actions', 'View audit'],
-  },
-  {
-    title: 'Operator',
-    description: 'Day-to-day monitoring and interaction.',
-    permissions: ['Daily operation', 'Monitor systems', 'Ask Stuart', 'Review alerts'],
-  },
-  {
-    title: 'Viewer',
-    description: 'Read-only observation access.',
-    permissions: ['Read-only access'],
-  },
-  {
-    title: 'Guest',
-    description: 'Limited access, disabled by default.',
-    permissions: ['Disabled by default'],
-  },
-]
-
 const USER_SESSIONS = [
   {
     user: 'Michael',
@@ -4396,66 +4351,16 @@ const USER_SESSIONS = [
   },
 ]
 
-function UserAccountCard({
-  name,
-  role,
-  status,
-  tone,
-  lastLogin,
-  device,
-  enabled,
-  onToggle,
-}: {
-  name: string
-  role: string
-  status: string
-  tone: 'ok' | 'warn' | 'error' | 'info'
-  lastLogin: string
-  device: string
-  enabled: boolean
-  onToggle: (enabled: boolean) => void
-}) {
-  return (
-    <div className={`user-account-card${enabled ? '' : ' disabled'}`}>
-      <div className="user-account-header">
-        <div>
-          <div className="user-account-name">{name}</div>
-          <StatusBadge label={role} tone="info" />
-        </div>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={enabled}
-          aria-label={`${enabled ? 'Disable' : 'Enable'} ${name}`}
-          className={`setting-switch${enabled ? ' on' : ''}`}
-          onClick={() => onToggle(!enabled)}
-        />
-      </div>
-      <div className="user-account-details">
-        <div className="user-account-detail">
-          <span className="user-account-detail-label">Status</span>
-          <span className={`user-account-status tone-${tone}`}>
-            <span className="user-account-status-dot" />
-            {status}
-          </span>
-        </div>
-        <div className="user-account-detail">
-          <span className="user-account-detail-label">Last Login</span>
-          <span>{lastLogin}</span>
-        </div>
-        <div className="user-account-detail">
-          <span className="user-account-detail-label">Device</span>
-          <span>{device}</span>
-        </div>
-      </div>
-    </div>
-  )
+function userAccountStatusTone(
+  status: (typeof MOCK_STUART_USERS)[number]['accountStatus'],
+): 'ok' | 'warn' | 'info' {
+  if (status === 'Active') return 'ok'
+  if (status === 'Invited') return 'info'
+  return 'warn'
 }
 
 function UsersSettings() {
-  const [accountEnabled, setAccountEnabled] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(USER_ACCOUNTS.map((u) => [u.id, u.enabled])),
-  )
+  const { currentUser, session, signOut } = useAuth()
   const [windowsLogin, setWindowsLogin] = useState(true)
   const [mfa, setMfa] = useState(true)
   const [localAccounts, setLocalAccounts] = useState(false)
@@ -4468,66 +4373,88 @@ function UsersSettings() {
   const [approveProviders, setApproveProviders] = useState(true)
   const [approveAssets, setApproveAssets] = useState(true)
 
-  const toggleAccount = (id: string, enabled: boolean) => {
-    setAccountEnabled((prev) => ({ ...prev, [id]: enabled }))
-  }
-
   return (
     <div className="settings-page-content">
       <header className="settings-content-header">
         <h2>Users</h2>
-        <p>User accounts, roles, permissions, and active sessions.</p>
+        <p>Stuart user accounts, roles, permissions, and active sessions.</p>
       </header>
 
       <div className="settings-sections">
         <SettingsSectionCard title="Active User" subtitle="Who is controlling Stuart right now" className="span-full">
           <div className="active-user-panel">
             <div className="active-user-label">Current User</div>
-            <div className="active-user-name">Michael Hatzopoulos</div>
+            <div className="active-user-name">{currentUser.displayName}</div>
             <div className="active-user-grid">
               <div className="active-user-field">
                 <span className="active-user-field-label">Role</span>
-                <span className="active-user-field-value">Owner</span>
+                <span className="active-user-field-value">{currentUser.role}</span>
               </div>
               <div className="active-user-field">
                 <span className="active-user-field-label">Status</span>
                 <span className="active-user-field-value online">
                   <span className="user-account-status-dot" />
-                  Online
+                  {currentUser.accountStatus}
                 </span>
               </div>
               <div className="active-user-field">
                 <span className="active-user-field-label">Current Session</span>
-                <span className="active-user-field-value">2h 14m</span>
+                <span className="active-user-field-value">{session.durationLabel}</span>
               </div>
               <div className="active-user-field">
                 <span className="active-user-field-label">Machine</span>
-                <span className="active-user-field-value">MSI Workstation</span>
+                <span className="active-user-field-value">{session.device}</span>
               </div>
               <div className="active-user-field">
                 <span className="active-user-field-label">Location</span>
-                <span className="active-user-field-value">Signal Lab</span>
+                <span className="active-user-field-value">{session.location}</span>
               </div>
+            </div>
+            <div className="settings-action-bar active-user-actions">
+              <button type="button" className="settings-action-btn" onClick={signOut}>
+                Sign Out
+              </button>
             </div>
           </div>
         </SettingsSectionCard>
 
-        <SettingsSectionCard title="User Accounts" subtitle="People who can sign in to Stuart" className="span-full">
-          <div className="user-accounts-grid">
-            {USER_ACCOUNTS.map((account) => (
-              <UserAccountCard
-                key={account.id}
-                {...account}
-                enabled={accountEnabled[account.id]}
-                onToggle={(enabled) => toggleAccount(account.id, enabled)}
-              />
-            ))}
-          </div>
+        <SettingsSectionCard title="Users" subtitle="People who can sign in to Stuart" className="span-full">
+          <table className="data-table settings-sessions-table users-directory-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>MFA</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {MOCK_STUART_USERS.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.displayName}</td>
+                  <td>{user.role}</td>
+                  <td>
+                    {user.mfaStatus === 'Enabled'
+                      ? 'MFA Enabled'
+                      : user.mfaStatus === 'Pending'
+                        ? 'MFA Pending'
+                        : 'MFA Disabled'}
+                  </td>
+                  <td>
+                    <StatusBadge
+                      label={user.accountStatus}
+                      tone={userAccountStatusTone(user.accountStatus)}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </SettingsSectionCard>
 
-        <SettingsSectionCard title="Roles & Permissions" subtitle="What each role can do in Stuart" className="span-full">
+        <SettingsSectionCard title="Roles" subtitle="Intended permissions for each Stuart role" className="span-full">
           <div className="roles-grid">
-            {USER_ROLES.map((role) => (
+            {MOCK_STUART_ROLES.map((role) => (
               <div key={role.title} className="role-card">
                 <div className="role-card-title">{role.title}</div>
                 <div className="role-card-desc">{role.description}</div>
@@ -5143,7 +5070,8 @@ function App() {
   }, [])
 
   return (
-    <div className="app-shell">
+    <SessionGate>
+      <div className="app-shell">
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-brand-name">STUART</div>
@@ -5182,6 +5110,7 @@ function App() {
             <div className="header-title">{meta.title}</div>
           </div>
           <div className="header-right">
+            <HeaderOperator />
             <div className="status-pill">
               <span className="status-dot" />
               Core Connected
@@ -5199,6 +5128,7 @@ function App() {
         </main>
       </div>
     </div>
+    </SessionGate>
   )
 }
 
