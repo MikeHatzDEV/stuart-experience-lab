@@ -5,6 +5,9 @@
  * Stuart Core data cannot be connected to the public frontend without authenticated
  * session, MFA, and authorization.
  * Stuart's own user system will eventually control access across Organizations and Stuart Cores.
+ *
+ * TODO(auth-v2): Replace mock exports with API-backed types and data.
+ * See docs/authentication_foundation_v2.md — §1.3, §3, §13.
  */
 
 export type StuartRole = 'Owner' | 'Admin' | 'Operator' | 'Viewer'

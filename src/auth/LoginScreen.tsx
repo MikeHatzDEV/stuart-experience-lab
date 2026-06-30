@@ -3,6 +3,8 @@ import { StuartOrb } from '../StuartOrb'
 import { useAuth } from './AuthContext'
 import './LoginScreen.css'
 
+// TODO(auth-v2): Wire to POST /auth/login and POST /auth/mfa/verify.
+// See docs/authentication_foundation_v2.md — §6, §12.
 export function LoginScreen() {
   const { signIn } = useAuth()
   const [username, setUsername] = useState('')

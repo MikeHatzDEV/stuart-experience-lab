@@ -1,5 +1,7 @@
 import { MOCK_SECURITY_POLICY, MOCK_USER_AUDIT_EVENTS } from './mockAuth'
 
+// TODO(auth-v2): Load policy and audit events from Stuart Auth API.
+// See docs/authentication_foundation_v2.md — §8, §11 Phase 4.
 function PolicyRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="security-policy-row">

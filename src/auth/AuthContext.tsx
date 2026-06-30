@@ -31,6 +31,9 @@ const AuthContext = createContext<AuthContextValue | null>(null)
  * 2. Require MFA verification for privileged roles before granting shell access.
  * 3. Enforce role-based authorization per organization and Stuart Core connection.
  * 4. Reject public preview requests that attempt live Core data without the above.
+ *
+ * TODO(auth-v2): Bootstrap from GET /auth/session; remove dev bypass in production.
+ * See docs/authentication_foundation_v2.md — §2, §5, §11 Phase 1–2.
  */
 const DEFAULT_AUTHENTICATED_FOR_DEV = true
 
