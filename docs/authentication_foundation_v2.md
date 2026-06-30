@@ -1,10 +1,10 @@
 # Stuart Authentication Foundation v2
 
-**Status:** Architecture & implementation plan  
+**Status:** Phase 1 complete — auth service skeleton in Experience Lab  
 **Scope:** Experience Lab (`stuart-grafana-prototype`)  
 **Date:** June 2026  
 
-This document defines how Stuart moves from the current mock user system to real authentication. It is a planning artifact — no real passwords, credentials, or Stuart Core connections are implemented yet.
+This document defines how Stuart moves from the current mock user system to real authentication. Phase 1 introduces a service abstraction layer; passwords, MFA verification, and Stuart Core connections are not implemented yet.
 
 ---
 
@@ -364,13 +364,23 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 - Mock UI foundation in place
 - Security boundaries documented
 
-### Phase 1 — Auth service skeleton
+### Phase 1 — Auth service skeleton (complete)
 
-- Stuart Auth API project (or module in Core)
+**Experience Lab frontend:**
+
+- `src/services/auth/` — service abstraction, API contract, provider pattern
+- `AuthContext` → `AuthService` → `MockAuthProvider` (UI no longer reads session from `mockAuth.ts`)
+- `Session` model replaces boolean `isAuthenticated` internally (UI still exposes `isAuthenticated` for compatibility)
+- `AuthStatus` placeholders: `initializing`, `session_expired`, `mfa_required` (only `authenticated` / `unauthenticated` active)
+- `AuthError` types defined (not yet surfaced in UI)
+- Environment: development uses `MockAuthProvider`; `ProductionAuthProvider` reserved, not enabled
+- `mockAuth.ts` retained for catalog data only (users directory, security policy, audit samples)
+
+**Not in Phase 1 (deferred to Phase 2+):**
+
+- Stuart Auth API HTTP project
 - User table, session table, password hash storage
-- `POST /auth/login`, `POST /auth/logout`, `GET /auth/session`
-- Replace `DEFAULT_AUTHENTICATED_FOR_DEV` with env-driven behavior
-- Frontend `AuthContext` calls session endpoint on load
+- Real `POST /auth/login`, cookie-based sessions
 
 ### Phase 2 — Credential validation & session cookies
 
@@ -451,8 +461,11 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 
 | File | Purpose |
 |------|---------|
-| `src/auth/mockAuth.ts` | Mock data; replace with API types |
-| `src/auth/AuthContext.tsx` | Session state provider |
+| `src/auth/mockAuth.ts` | Mock catalog data (users, roles, policy); not session state |
+| `src/services/auth/authService.ts` | Auth service singleton |
+| `src/services/auth/MockAuthProvider.ts` | Active provider (Phase 1) |
+| `src/services/auth/ProductionAuthProvider.ts` | Reserved provider (Phase 2+) |
+| `src/auth/AuthContext.tsx` | React session state; consumes `authService` |
 | `src/auth/SessionGate.tsx` | Auth boundary |
 | `src/auth/LoginScreen.tsx` | Login + MFA UI shell |
 | `src/auth/HeaderOperator.tsx` | Operator identity in header |
@@ -472,6 +485,79 @@ VITE_REQUIRE_AUTH=false   # true when production auth ships
 | Preview data | Mock only until Phase 6 | Prevents public data exposure |
 | Core credentials | Server-side only | Browser never holds Core secrets |
 | RBAC enforcement | Server-side | UI gating is convenience, not security |
+
+---
+
+## 16. Phase 1 Implementation — Service Abstraction
+
+### 16.1 Architecture
+
+```
+┌──────────────┐     ┌──────────────┐     ┌───────────────────┐     ┌────────────────────────┐
+│  UI Layer    │     │ AuthContext  │     │   AuthService     │     │  AuthProvider          │
+│ LoginScreen  │────►│ useAuth()    │────►│  (singleton)      │────►│  MockAuthProvider ✓    │
+│ HeaderOperator│    │ SessionGate  │     │                   │     │  ProductionAuthProvider│
+│ UsersSettings│     └──────────────┘     └───────────────────┘     │  (reserved)            │
+└──────────────┘                                                      └────────────────────────┘
+                                                                              │
+                                                                              ▼
+                                                                    mockAuth.ts (catalog only)
+```
+
+### 16.2 Service interfaces (`AuthApi`)
+
+| Method | Purpose | Phase 1 behavior |
+|--------|---------|------------------|
+| `signIn(request)` | Establish session | Mock: creates preview session |
+| `signOut()` | End session | Mock: clears in-memory session |
+| `getCurrentSession()` | Read active session | Mock: returns in-memory session |
+| `refreshSession()` | Extend idle window | Mock: updates `expiresAt` |
+| `verifyMfa(request)` | Complete MFA step | Mock: sets `mfaVerified` (placeholder) |
+
+### 16.3 Session model
+
+```typescript
+Session {
+  sessionId: string
+  authenticated: boolean
+  currentUser: StuartUser
+  createdAt: string          // ISO 8601
+  expiresAt: string          // ISO 8601
+  authenticationMethod: 'preview' | 'password' | 'sso'
+  mfaVerified: boolean
+  // Display metadata (UI compatibility)
+  sessionType, authenticatedAt, device, location, durationLabel
+}
+```
+
+### 16.4 Provider pattern
+
+| Provider | When used | Phase 1 status |
+|----------|-----------|----------------|
+| `MockAuthProvider` | Development / preview | **Active** |
+| `ProductionAuthProvider` | Production Stuart Auth API | **Reserved** — not enabled |
+
+`resolveAuthProviderKind()` always returns `mock` until Phase 2. Setting `VITE_AUTH_PROVIDER=production` logs a warning only.
+
+### 16.5 Environment configuration
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VITE_AUTH_DEV_BOOTSTRAP` | `true` in development | Auto-authenticate on load for review |
+| `VITE_AUTH_PROVIDER` | `mock` | Reserved switch for `ProductionAuthProvider` |
+| `import.meta.env.PROD` | — | Drives `getAuthDeploymentEnvironment()` |
+
+### 16.6 Auth status & errors
+
+**Status:** `initializing` | `authenticated` | `unauthenticated` | `session_expired` | `mfa_required`
+
+**Errors (types only):** `InvalidCredentials`, `SessionExpired`, `MfaRequired`, `AccountLocked`, `ServerUnavailable`
+
+### 16.7 What unchanged in Phase 1
+
+- Login, Header, Users, Security, Audit, Home UI
+- Sign In / Sign Out user flows
+- All stewardship data remains mock
 
 ---
 

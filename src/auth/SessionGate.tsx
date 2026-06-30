@@ -10,7 +10,11 @@ import { LoginScreen } from './LoginScreen'
  * See docs/authentication_foundation_v2.md — §2.2, §5.5, §11 Phase 2.
  */
 export function SessionGate({ children }: { children: ReactNode }) {
-  const { isAuthenticated } = useAuth()
+  const { status, isAuthenticated } = useAuth()
+
+  if (status === 'initializing') {
+    return null
+  }
 
   if (!isAuthenticated) {
     return <LoginScreen />
