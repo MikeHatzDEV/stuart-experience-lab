@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 
 /** Application routes — public entry through organization selection to platform. */
-export type AppRoute = '/' | '/login' | '/organizations' | '/app'
+export type AppRoute = '/' | '/login' | '/register' | '/organizations' | '/app'
 
 export function normalizeAppRoute(pathname: string): AppRoute {
   if (pathname === '/login') return '/login'
+  if (pathname === '/register') return '/register'
   if (pathname === '/organizations') return '/organizations'
   if (pathname === '/app' || pathname.startsWith('/app/')) return '/app'
   return '/'

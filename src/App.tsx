@@ -1,19 +1,19 @@
 /**
  * Stuart — Integrated Application Router
  *
- * Architecture (Post-Login Organization Entry Foundation v1):
+ * Architecture (Website Registration Integration Foundation v1):
  *
- * Authentication determines WHO the user is.
- * Organization selection determines WHICH environment the user wishes to access.
- * The Experience Platform operates within the selected organization context.
+ * Website owns forms, navigation, and user experience.
+ * Stuart Authentication Service owns users, password hashing, validation, and duplicate checks.
  *
  * Routes:
  *   /              — Landing (public front door)
- *   /login         — Authentication entry (mock until central Stuart auth)
- *   /organizations — Organization selection (bridge between auth and platform)
- *   /app           — Experience Platform (existing product shell)
+ *   /login         — Sign in (mock session until login integration)
+ *   /register      — Real account creation via Authentication Service
+ *   /organizations — Organization selection
+ *   /app           — Experience Platform (unchanged)
  *
- * Future routes may include Downloads, Documentation, Support, and Account.
+ * Registration does not sign in or enter /app. Future: email verification → MFA → login.
  */
 
 import { useEffect } from 'react'
@@ -23,6 +23,7 @@ import { OrganizationGate } from './app/OrganizationGate'
 import { clearSelectedOrganization } from './app/organizationSelection'
 import { LoginScreen } from './auth/LoginScreen'
 import { LandingPage } from './pages/LandingPage'
+import { RegisterPage } from './pages/RegisterPage'
 import { OrganizationSelectionPage } from './pages/OrganizationSelectionPage'
 import { ExperiencePlatform } from './ExperiencePlatform'
 import { useAppRoute } from './app/routing'
@@ -60,6 +61,16 @@ function App() {
       <LoginScreen
         onBack={() => navigate('/')}
         onSuccess={() => navigate('/organizations')}
+        onCreateAccount={() => navigate('/register')}
+      />
+    )
+  }
+
+  if (route === '/register') {
+    return (
+      <RegisterPage
+        onSignIn={() => navigate('/login')}
+        onBack={() => navigate('/')}
       />
     )
   }

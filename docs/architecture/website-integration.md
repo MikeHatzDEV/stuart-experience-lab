@@ -1,76 +1,71 @@
 # Website Integration — Domain Architecture
 
-Foundation v3 · Platform version `0.2.2-Alpha_v2`
+Foundation v4 · Platform version `0.2.3-Alpha_v2`
 
 ## One application
 
-`stuart-grafana-prototype` is the single React application for both the public website and the Stuart Experience Platform. The separate `signal-lab-systems-website` project was a temporary prototype only and is not maintained.
+`stuart-grafana-prototype` is the single React application for both the public website and the Stuart Experience Platform.
 
 ## Public website structure
 
 | Route | Role |
 |-------|------|
-| `/` | **Public website** — landing page at `https://signallabsystems.com/` |
-| `/login` | **Authentication** — existing login screen (mock until central Stuart auth) |
-| `/organizations` | **Organization selection** — bridge between authentication and platform |
-| `/app` | **Experience Platform** — full Stuart product shell (unchanged) |
+| `/` | **Public website** — landing page |
+| `/login` | **Sign in** — mock session flow (login integration future) |
+| `/register` | **Account creation** — real Stuart Authentication Service |
+| `/organizations` | **Organization selection** |
+| `/app` | **Experience Platform** (unchanged) |
 
-## Approved user journey
+## Registration integration (v1)
 
 ```
-https://signallabsystems.com/
+Website (/register)
+        ↓  POST /auth/register
+Stuart Authentication Service (0.3.1-Alpha_v2)
         ↓
-   /  Landing
-        ↓  [Access Stuart]
-   /login  Authentication
+Future Email Verification
         ↓
-   /organizations  Organization selection
-        ↓  [Open Stuart]
-   /app  Experience Platform
+Future MFA
+        ↓
+Future Login
 ```
 
-### Architecture layers
+### Responsibility split
 
-- **Authentication** determines WHO the user is.
-- **Organization selection** determines WHICH environment the user wishes to access.
-- **Experience Platform** operates within the selected organization context.
+| Layer | Owns |
+|-------|------|
+| **Website** | Forms, navigation, client validation, user experience |
+| **Authentication Service** | Users, password hashing, server validation, duplicate email checks |
 
-When `VITE_AUTH_DEV_BOOTSTRAP` is enabled (development default), `/app` still requires organization selection in the current session unless the operator has already chosen an organization via **Open Stuart**.
+Registration **does not** sign in, issue sessions, or navigate to `/app`.
+
+### Configuration
+
+| Variable | Purpose |
+|----------|---------|
+| `VITE_STUART_AUTH_SERVICE_URL` | Base URL for Stuart Authentication Service (no trailing slash) |
+
+Development uses Vite proxy: `/stuart-auth` → `http://127.0.0.1:8100`.
+
+API client: `src/services/stuartAuthApi/`
+
+## Approved user journey (sign-in path)
+
+```
+/  Landing → /login → /organizations → /app
+```
+
+## Account creation journey
+
+```
+/  Landing → /login → [Create Account] → /register → success message
+```
+
+No automatic login after registration.
 
 ## Organization selection (v1)
 
-Foundation v1 exposes a single organization:
-
-| Field | Value |
-|-------|--------|
-| Organization | Signal Lab |
-| Description | Primary development and testing environment for Stuart. |
-| Status | Healthy |
-| Role | Owner |
-| Primary Stuart Core | COMMS-01 (Planned) |
-
-Even with one organization, operators see the selection page to establish the workflow before multiple organizations exist.
-
-Organization creation, Stuart Core enrollment, and production authentication are not implemented.
-
-## Landing page
-
-The root URL is a minimal public front door:
-
-- Signal Lab Systems branding
-- Centered Stuart Orb
-- Mission: Observe · Understand · Act
-- Single CTA: **Access Stuart** → `/login`
-- Footer placeholders (Documentation, Downloads, Support, Contact) — disabled
-- Platform version from `package.json`
-
-## Future routes (not implemented)
-
-- Downloads
-- Documentation
-- Support
-- Account / customer portal
-- Organization management
+Unchanged — single Signal Lab organization card before `/app`.
 
 ## Principles
 
@@ -81,3 +76,5 @@ The root URL is a minimal public front door:
 ## Version
 
 Platform version is the single source of truth in `package.json`, consumed by `src/app/version.ts`.
+
+Authentication Service version (`0.3.1-Alpha_v2`) is independent.

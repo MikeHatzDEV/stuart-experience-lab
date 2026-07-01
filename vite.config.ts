@@ -22,6 +22,15 @@ export default defineConfig({
   // Root-domain Cloudflare Pages deployment (https://stuartlab.signallabsystems.com)
   base: '/',
   plugins: [react(), cssBeforeAppScript()],
+  server: {
+    proxy: {
+      '/stuart-auth': {
+        target: 'http://127.0.0.1:8100',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/stuart-auth/, ''),
+      },
+    },
+  },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
