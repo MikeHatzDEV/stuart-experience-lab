@@ -23,6 +23,7 @@ export default defineConfig({
   base: '/',
   plugins: [react(), cssBeforeAppScript()],
   server: {
+    port: 5174,
     proxy: {
       '/stuart-auth': {
         target: 'http://127.0.0.1:8100',
